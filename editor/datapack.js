@@ -422,7 +422,7 @@ function checkPack(files) {
       const m = d.school.match(/^irons_spellbooks:(\w+)$/);
       const own = `data/iss_runeforged/awakening_configs/${m && m[1]}/${d.behavior}.json`;
       if (m && BUNDLED_AWAKENING_SCHOOLS.includes(m[1]) && BUNDLED_AWAKENING_BEHAVIORS.includes(d.behavior) && file !== own) {
-        problems.push({ file, path: 'school', msg: `the mod already ships ${key}. To replace it, save this file as ${own}`, warn: false });
+        problems.push({ file, path: 'school', msg: `the mod already ships ${key}, and only one file per school and behaviour loads. Click here to move this file to ${own} so it replaces the built-in one`, warn: false, moveTo: own });
       }
     }
     if (f.kind === 'tuning' && Array.isArray(d.items)) {

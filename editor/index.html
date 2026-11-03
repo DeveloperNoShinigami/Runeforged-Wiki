@@ -960,7 +960,8 @@ function markErrors() {
     const target = fieldFor(form, p.path);
     if (!target) continue;
     target.classList.add('bad');
-    target.append(el('div', { className: 'msg', textContent: p.msg }));
+    const i = problems.indexOf(p);
+    target.append(el('div', { className: 'msg', textContent: p.msg, style: p.moveTo ? 'cursor:pointer;text-decoration:underline' : '', onclick: p.moveTo ? () => goTo(i) : null }));
   }
 }
 
@@ -973,6 +974,12 @@ function fieldFor(form, path) {
 
 function goTo(i) {
   const p = problems[i];
+  if (p.moveTo) {
+    if (files[p.moveTo]) return toast(`${p.moveTo} already exists. Delete or merge one of the two files.`);
+    relocate(p.file, p.moveTo, false);
+    rawView = false; select(p.moveTo);
+    return toast(`Moved to ${p.moveTo}. It now replaces the built-in config.`);
+  }
   if (selected !== p.file) { rawView = false; select(p.file); }
   if (files[p.file]?.kind === 'forgemap') return ForgemapEditor.focusPath(p.path);
   const form = document.getElementById('form');
