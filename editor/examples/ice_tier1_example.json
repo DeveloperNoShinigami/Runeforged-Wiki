@@ -1,0 +1,252 @@
+{
+  "tier": 1,
+  "school": "irons_spellbooks:ice",
+  "name": "ice_tier1_example",
+  "mode": "standard",
+  "weight": 1,
+  "total_hits": 21,
+  "approach_ms": 2550,
+  "music_track": "",
+  "music_offset_ms": 0,
+  "scoring_config": {
+    "perfect": 2,
+    "good": 1,
+    "miss": -2,
+    "support_hit": 2,
+    "support_miss": -1,
+    "speed": {
+      "approach_multiplier": 1,
+      "response_window_ms": 500,
+      "weight": 0.3
+    },
+    "scale": {
+      "action_radius_multiplier": 1,
+      "support_radius_multiplier": 1,
+      "weight": 0.2
+    },
+    "accuracy": {
+      "perfect_window_ms": 225,
+      "good_window_ms": 375,
+      "weight": 0.5
+    },
+    "quality_thresholds": {
+      "uncommon": 35,
+      "rare": 55,
+      "epic": 70,
+      "legendary": 80,
+      "myth": 86
+    }
+  },
+  "notes": [
+    {
+      "id": "n0",
+      "type": "primary",
+      "spawn_time_ms": 6492,
+      "hit_window_ms": 375,
+      "position": {
+        "x": 0.674,
+        "y": 0.682
+      }
+    },
+    {
+      "id": "n1",
+      "type": "primary",
+      "spawn_time_ms": 6992,
+      "hit_window_ms": 375,
+      "position": {
+        "x": 0.777,
+        "y": 0.807
+      }
+    },
+    {
+      "id": "n2",
+      "type": "primary",
+      "spawn_time_ms": 7492,
+      "hit_window_ms": 375,
+      "position": {
+        "x": 0.883,
+        "y": 0.684
+      }
+    },
+    {
+      "id": "n3",
+      "type": "primary",
+      "spawn_time_ms": 7992,
+      "hit_window_ms": 375,
+      "position": {
+        "x": 0.787,
+        "y": 0.553
+      }
+    },
+    {
+      "id": "n4",
+      "type": "primary",
+      "spawn_time_ms": 8492,
+      "hit_window_ms": 375,
+      "position": {
+        "x": 0.63,
+        "y": 0.593
+      }
+    },
+    {
+      "id": "n5",
+      "type": "primary",
+      "spawn_time_ms": 8992,
+      "hit_window_ms": 375,
+      "position": {
+        "x": 0.475,
+        "y": 0.64
+      }
+    },
+    {
+      "id": "n6",
+      "type": "primary",
+      "spawn_time_ms": 9492,
+      "hit_window_ms": 375,
+      "position": {
+        "x": 0.316,
+        "y": 0.67
+      }
+    },
+    {
+      "id": "n7",
+      "type": "primary",
+      "spawn_time_ms": 13992,
+      "hit_window_ms": 375,
+      "position": {
+        "x": 0.565,
+        "y": 0.711
+      }
+    },
+    {
+      "id": "n8",
+      "type": "primary",
+      "spawn_time_ms": 14492,
+      "hit_window_ms": 375,
+      "position": {
+        "x": 0.723,
+        "y": 0.747
+      }
+    },
+    {
+      "id": "n9",
+      "type": "primary",
+      "spawn_time_ms": 14992,
+      "hit_window_ms": 375,
+      "position": {
+        "x": 0.884,
+        "y": 0.76
+      }
+    },
+    {
+      "id": "n10",
+      "type": "primary",
+      "spawn_time_ms": 15492,
+      "hit_window_ms": 375,
+      "position": {
+        "x": 0.722,
+        "y": 0.758
+      }
+    },
+    {
+      "id": "n11",
+      "type": "primary",
+      "spawn_time_ms": 15992,
+      "hit_window_ms": 375,
+      "position": {
+        "x": 0.562,
+        "y": 0.734
+      }
+    },
+    {
+      "id": "n12",
+      "type": "primary",
+      "spawn_time_ms": 16492,
+      "hit_window_ms": 375,
+      "position": {
+        "x": 0.612,
+        "y": 0.58
+      }
+    },
+    {
+      "id": "n13",
+      "type": "primary",
+      "spawn_time_ms": 16992,
+      "hit_window_ms": 375,
+      "position": {
+        "x": 0.678,
+        "y": 0.432
+      }
+    },
+    {
+      "id": "n14",
+      "type": "primary",
+      "spawn_time_ms": 21492,
+      "hit_window_ms": 375,
+      "position": {
+        "x": 0.43,
+        "y": 0.478
+      }
+    },
+    {
+      "id": "n15",
+      "type": "primary",
+      "spawn_time_ms": 21992,
+      "hit_window_ms": 375,
+      "position": {
+        "x": 0.271,
+        "y": 0.511
+      }
+    },
+    {
+      "id": "n16",
+      "type": "primary",
+      "spawn_time_ms": 22492,
+      "hit_window_ms": 375,
+      "position": {
+        "x": 0.11,
+        "y": 0.529
+      }
+    },
+    {
+      "id": "n17",
+      "type": "primary",
+      "spawn_time_ms": 22992,
+      "hit_window_ms": 375,
+      "position": {
+        "x": 0.271,
+        "y": 0.546
+      }
+    },
+    {
+      "id": "n18",
+      "type": "primary",
+      "spawn_time_ms": 23492,
+      "hit_window_ms": 375,
+      "position": {
+        "x": 0.433,
+        "y": 0.55
+      }
+    },
+    {
+      "id": "n19",
+      "type": "primary",
+      "spawn_time_ms": 23992,
+      "hit_window_ms": 375,
+      "position": {
+        "x": 0.595,
+        "y": 0.55
+      }
+    },
+    {
+      "id": "n20",
+      "type": "primary",
+      "spawn_time_ms": 24492,
+      "hit_window_ms": 375,
+      "position": {
+        "x": 0.587,
+        "y": 0.712
+      }
+    }
+  ]
+}

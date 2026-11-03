@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Runeforged Wiki</title>
+<meta name="description" content="Runeforged, an Iron's Spells 'n Spellbooks add-on: forge, align, refine and awaken your gear.">
+<link rel="icon" href="img/runesmith_rune.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <svg class="circle" viewBox="0 0 400 400" aria-hidden="true">
+    <defs><path id="ring" d="M200,200 m-160,0 a160,160 0 1,1 320,0 a160,160 0 1,1 -320,0"/>
+    <path id="ring2" d="M200,200 m-118,0 a118,118 0 1,1 236,0 a118,118 0 1,1 -236,0"/></defs>
+    <circle cx="200" cy="200" r="182"/><circle cx="200" cy="200" r="138"/><circle cx="200" cy="200" r="98"/>
+    <text><textPath href="#ring">ᚱᚢᚾᛖᚠᛟᚱᚷᛖᛞ ᛫ ᚺᚨᛗᛗᛖᚱ ᚨᚾᛞ ᚨᚾᚹᛁᛚ ᛫ ᛋᛖᚨᛚ ᚨᚾᛞ ᛋᛈᛁᚱᛁᛏ ᛫ ᚠᛟᚱᚷᛖ ᚨᚾᛞ ᚨᚹᚨᚲᛖᚾ ᛫</textPath></text>
+    <text class="inner"><textPath href="#ring2">ᛖᚷᛟ ᛫ ᛗᚨᚾᚢᛋᚲᚱᛁᛈᛏ ᛫ ᚱᛖᚠᛁᚾᛖ ᛫ ᛗᚨᛋᛏᛖᚱᚤ ᛫ ᛋᚲᚺᛟᛟᛚ ᛫</textPath></text>
+    <polygon points="200,112 276,244 124,244"/><polygon points="200,288 124,156 276,156"/>
+  </svg>
+  <div class="hero-text">
+    <img class="hero-icon" src="img/runic_hammer.png" alt="">
+    <h1>Runeforged</h1>
+    <p class="tag">An add-on for Iron's Spells 'n Spellbooks. Forge your gear, align it to a school, refine it, then wake its spirit.</p>
+    <p class="badges"><span>Minecraft 1.21.1</span><span>NeoForge</span><span>v1.0.0</span></p>
+  </div>
+</header>
+
+<nav class="toc" aria-label="Contents">
+  <a href="#install">Install</a>
+  <a href="#path">The Path</a>
+  <a href="#controls">Controls</a>
+  <a href="#packs">Packs &amp; Servers</a>
+  <a href="editor/">Pack Editor</a>
+  <a href="#future">Coming Next</a>
+  <a href="#changelog">Changelog</a>
+</nav>
+
+<main>
+
+<section id="install">
+  <h2><span class="r">ᛁ</span> Install</h2>
+  <div class="cols">
+    <div class="card">
+      <h3>Required</h3>
+      <ul>
+        <li>Minecraft 1.21.1</li>
+        <li>NeoForge 21.1 or newer</li>
+        <li>Iron's Spells 'n Spellbooks</li>
+        <li>Overgeared</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Optional</h3>
+      <table>
+        <tr><td>Patchouli</td><td>The in-game guide book</td></tr>
+        <tr><td>Curios API</td><td>Forge rings, necklaces and charms</td></tr>
+        <tr><td>TACZ</td><td>Forge guns; the Black Lotus pistol</td></tr>
+        <tr><td>Ace's Spell Utils</td><td>Occult school and its rune</td></tr>
+        <tr><td>Hazen 'n Stuff</td><td>Eldritch school</td></tr>
+        <tr><td>Hazen's library</td><td>Cosmic, Radiance and Shadow schools</td></tr>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section id="path">
+  <h2><span class="r">ᚱ</span> The Path</h2>
+  <p class="lead">In the order you'll play it.</p>
+
+  <ol class="steps">
+
+  <li id="guide">
+    <h3>The Guide Book</h3>
+    <p>Craft a book with an iron ingot. It covers everything on this page, in game. Needs Patchouli.</p>
+  </li>
+
+  <li id="runesmith-rune">
+    <h3>Runesmith Rune</h3>
+    <div class="row">
+      <img class="recipe" src="img/recipe_runesmith_rune.png" alt="Runesmith Rune recipe">
+      <p>Every key item starts here. A blank rune ringed by iron ingots, with an iron sword, axe, hoe and shovel in the corners. It also aligns gear to the Runesmith school.</p>
+    </div>
+  </li>
+
+  <li id="hammer">
+    <h3>Runic Hammer</h3>
+    <div class="row">
+      <img class="recipe" src="img/recipe_runic_hammer.png" alt="Runic Hammer recipe">
+      <div>
+        <p>Your tool for every strike. Iron blocks on each side, the Runesmith Rune on top, two sticks down the middle.</p>
+        <p>The hammer gains mastery as you forge. Its tier caps the quality you can reach (see <a href="#mastery">Mastery</a>).</p>
+      </div>
+    </div>
+  </li>
+
+  <li id="anvil">
+    <h3>Runic Anvil</h3>
+    <div class="row">
+      <img class="recipe" src="img/recipe_runic_anvil.png" alt="Runic Anvil recipe">
+      <div>
+        <p>An upgrade of Overgeared's Tier B smithing anvil: the anvil on top, the Runesmith Rune below, three iron blocks at the base.</p>
+        <p>Work your way up Overgeared's anvils first. Tier B comes from upgrading in the world, not from a recipe.</p>
+      </div>
+    </div>
+    <p class="cfg"><b>Configurable:</b> every recipe on this page (datapack).</p>
+  </li>
+
+  <li id="first-forge">
+    <h3>Your First Forge</h3>
+    <ol class="sub">
+      <li>Open the anvil. Put in a sword (or any forgeable item) and a blank rune.</li>
+      <li>Hold the hammer and right-click the anvil.</li>
+      <li>Play the minigame.</li>
+      <li>Right-click the anvil to collect the item floating above it.</li>
+    </ol>
+    <p>The item is now <em>runeforged</em>, but it has no school yet.</p>
+  </li>
+
+  <li id="minigame">
+    <h3>The Forging Minigame</h3>
+    <p>The camera moves beside the anvil and a rune board appears. The server judges every hit: Perfect, Great, Okay or Miss. Your accuracy sets the quality. You get one of three modes:</p>
+    <div class="cols three">
+      <div class="card"><h4>Rune Forging</h4><p>Hit each seal as its ring closes. Hold sliders along their track.</p>
+        <details><summary>See it</summary><img loading="lazy" src="img/mode_rune_forging.gif" alt="Rune Forging in game"></details></div>
+      <div class="card"><h4>Catch the Rune</h4><p>Move the bar to catch falling runes. Center catches score higher.</p>
+        <details><summary>See it</summary><img loading="lazy" src="img/mode_catch.gif" alt="Catch the Rune in game"></details></div>
+      <div class="card"><h4>Runic Lanes</h4><p>Four lanes, notes slide to the line. Hold the long notes. Ghost presses cost accuracy.</p>
+        <details><summary>See it</summary><img loading="lazy" src="img/mode_lanes.gif" alt="Runic Lanes in game"></details></div>
+    </div>
+    <p class="cfg"><b>Configurable:</b> songs, charts, modes and grade thresholds (forgemaps, built with the <a href="editor/">Pack Editor</a>); forge camera and upscroll (client config); every key (Controls).</p>
+  </li>
+
+  <li id="schools">
+    <h3>Align to a School</h3>
+    <p>Put the forged item and a school rune (fire, ice and so on) in the anvil, then strike. The item gets school damage and colours, and your mana bar takes the school colour while you hold it.</p>
+    <div class="row">
+      <img class="recipe" src="img/recipe_ritual_rune.png" alt="Occult Rune recipe">
+      <p><strong>Occult Rune</strong> (with Ace's Spell Utils): a blank rune ringed by candles, with a blood vial in each corner.<br>Add-on schools (Eldritch, Cosmic, Radiance, Shadow) use their own mod's rune.</p>
+    </div>
+  </li>
+
+  <li id="quality">
+    <h3>Quality and Refine</h3>
+    <table class="grades">
+      <tr><th>Grade</th><th>Start</th><th>Cap</th></tr>
+      <tr><td class="q-unc">Uncommon</td><td>+1</td><td>+1</td></tr>
+      <tr><td class="q-rare">Rare</td><td>+1</td><td>+3</td></tr>
+      <tr><td class="q-epic">Epic</td><td>+3</td><td>+5</td></tr>
+      <tr><td class="q-leg">Legendary</td><td>+6</td><td>+9</td></tr>
+      <tr><td class="q-myth">Myth</td><td>+10</td><td>+10</td></tr>
+    </table>
+    <ul>
+      <li><strong>Refine:</strong> strike again with the matching school rune (a protection rune for armour and shields). +1 each time, up to the cap.</li>
+      <li><strong>Promote:</strong> at the cap, an arcane rune raises the item one grade.</li>
+    </ul>
+    <p class="cfg"><b>Configurable:</b> damage and resistance gained per refine, for each hammer tier (server config).</p>
+  </li>
+
+  <li id="mastery">
+    <h3>Hammer Mastery</h3>
+    <table class="grades">
+      <tr><th>Tier</th><th>Points</th><th>Best grade</th></tr>
+      <tr><td>Novice</td><td>0</td><td>Uncommon</td></tr>
+      <tr><td>Adept</td><td>100</td><td>Rare</td></tr>
+      <tr><td>Expert</td><td>300</td><td>Epic</td></tr>
+      <tr><td>Master</td><td>700</td><td>Legendary</td></tr>
+      <tr><td>Grandmaster</td><td>1500</td><td>Myth</td></tr>
+    </table>
+    <p>A perfect forge gives about 100 points. When one school reaches Grandmaster, the hammer specializes in that school.</p>
+    <p class="cfg"><b>Configurable:</b> tier point thresholds and points per forge (server config).</p>
+  </li>
+
+  <li id="manuscripts">
+    <h3>Runic Manuscripts</h3>
+    <div class="row">
+      <img class="icon" src="img/runic_manuscript.png" alt="">
+      <div>
+        <p>Very rare loot in dungeon and structure chests, from any mod. Each one carries a single attribute.</p>
+        <p>Put a forged item and the manuscript in the anvil, then strike. You get 1 slot per 2 refine, so Myth +10 gives 5 slots. Manuscripts add to your gear's own stats and never replace them.</p>
+      </div>
+    </div>
+    <p class="cfg"><b>Configurable:</b> loot chance (datapack, default 2%); slots per refine (server config); each attribute's value and growth per refine (<code>iss_runeforged-manuscripts.toml</code>).</p>
+  </li>
+
+  <li id="slots">
+    <h3>Spell Slots and Curios</h3>
+    <ul>
+      <li><strong>Spell slots:</strong> an aligned item, its school rune and the matching upgrade orb, then strike. +1 slot each time, up to the item's refine.</li>
+      <li><strong>Curios:</strong> forged rings, necklaces and charms give school spell power while worn, and more with each refine.</li>
+    </ul>
+    <p class="cfg"><b>Configurable:</b> curio spell power per refine (server config).</p>
+  </li>
+
+  <li id="awakening">
+    <h3>Runic Awakening</h3>
+    <div class="row">
+      <img class="icon" src="img/runic_awakening.png" alt="">
+      <div>
+        <p>A Runesmith spell. Scribe it at the Scroll Forge with Legendary ink and a blank rune; you don't need to learn it first.</p>
+        <p>Casting it wakes all your forged gear at once. Weapons react on hit, shields on block, armour when you're hit. Keep a matching rune in your off hand.</p>
+        <p class="note">Abracadabra, an enchantment for armour and shields, casts one of the stored spells when you're hit.</p>
+      </div>
+    </div>
+    <p class="cfg"><b>Configurable:</b> what each school's awakening does, its cost and duration (datapack); Abracadabra cooldown (server config).</p>
+  </li>
+
+  <li id="ego">
+    <h3>Ego Awakening</h3>
+    <div class="row">
+      <img class="recipe" src="img/recipe_ego_manuscript.png" alt="Ego Manuscript recipe">
+      <div>
+        <p>A hidden spell. Craft an <strong>Ego Manuscript</strong> (four runic manuscripts around a Runesmith Rune) and use it to learn the spell, then scribe it.</p>
+        <p>Cast it while holding an aligned Myth weapon. The weapon's spirit forms, takes your weapon and matching armour, and fights beside you. You can have up to 3 spirits.</p>
+      </div>
+    </div>
+    <p class="cfg"><b>Configurable:</b> mana cost, awakening time, cooldown, recast window, max spirits, chase and return range (server config).</p>
+  </li>
+
+  <li id="black-lotus">
+    <h3>The Black Lotus</h3>
+    <div class="row">
+      <img class="icon" src="img/mana_seal.png" alt="">
+      <div>
+        <p>A TACZ pistol that fires mana instead of ammo, from the separate Black Lotus gun pack. Each shot casts a rune seal that locks on to your target. <em>Spell Slinger</em> mode fires your selected spell instead.</p>
+        <p>It uses TACZ's own controls: fire, aim, reload, and the fire-mode key to cycle Semi, Charged and Spell Slinger (SS).</p>
+      </div>
+    </div>
+    <div class="cols three">
+      <details class="card"><summary>The draw</summary><img loading="lazy" src="img/lotus_draw.gif" alt="Drawing the Black Lotus from a rune seal"></details>
+      <details class="card"><summary>Seal shots</summary><img loading="lazy" src="img/lotus_seal_shot.gif" alt="Black Lotus seal shots"></details>
+      <details class="card"><summary>Spell Slinger</summary><img loading="lazy" src="img/lotus_spell_slinger.gif" alt="Spell Slinger casting fireballs"></details>
+    </div>
+    <p class="cfg"><b>Configurable:</b> mana per shot, flat or % of max mana, per rarity or per gun (<code>iss_runeforged-gun-mana.toml</code>).</p>
+  </li>
+
+  </ol>
+</section>
+
+<section id="controls">
+  <h2><span class="r">ᚲ</span> Controls</h2>
+  <p class="lead">These are only defaults. Rebind any of them in <em>Options › Controls › Key Binds › Runeforged</em>. The minigame keys only work in the minigame, so they don't conflict with movement.</p>
+  <table class="keys">
+    <tr><td><kbd>J</kbd> / <kbd>K</kbd></td><td>Show awakening details / imbued spells (hold over an item)</td></tr>
+    <tr><td><kbd>Z</kbd> <kbd>X</kbd> <kbd>C</kbd></td><td>Rune Forging: forge seal, support seal, slider</td></tr>
+    <tr><td><kbd>A</kbd> <kbd>D</kbd> <kbd>Shift</kbd></td><td>Catch the Rune: left, right, dash</td></tr>
+    <tr><td><kbd>D</kbd> <kbd>F</kbd> <kbd>J</kbd> <kbd>K</kbd></td><td>Runic Lanes 1–4</td></tr>
+    <tr><td><kbd>U</kbd></td><td>Toggle upscroll</td></tr>
+  </table>
+</section>
+
+<section id="packs">
+  <h2><span class="r">ᛞ</span> Packs &amp; Servers</h2>
+  <div class="cols">
+    <div class="card">
+      <h3>Pack makers</h3>
+      <p>Almost everything is data-driven, so a datapack can change it:</p>
+      <ul><li>forgemaps (minigame songs and charts): build them, and the rest of a pack, in the browser with the <a href="editor/">Pack Editor</a></li><li>awakening effects</li><li>quality tuning</li><li>recipes</li><li>the manuscript loot chance (<code>loot_modifiers/runic_manuscript_chest.json</code>, default 2%)</li></ul>
+    </div>
+    <div class="card">
+      <h3>Server owners</h3>
+      <p>The config files are in <code>config/</code>:</p>
+      <ul><li>server: mastery points, slots, cooldowns</li><li>Ego Awakening</li><li>client</li><li>manuscripts</li><li>gun mana (<code>iss_runeforged-gun-mana.toml</code>)</li></ul>
+    </div>
+  </div>
+</section>
+
+<section id="future">
+  <h2><span class="r">ᛟ</span> Coming Next</h2>
+  <div class="card future">
+    <img class="icon" src="img/runic_anvil.png" alt="">
+    <div>
+      <h3>The Dwarven City</h3>
+      <p>A blacksmith city where Runeforged lives. Its smiths will teach forging above today's highest level.</p>
+      <p class="note">Planned. Not in the current version.</p>
+    </div>
+  </div>
+</section>
+
+<section id="changelog">
+  <h2><span class="r">ᛚ</span> Changelog</h2>
+  <div class="card">
+    <h3>1.0.0</h3>
+    <ul>
+      <li>Rune forging at the Runic Anvil, with three minigame modes.</li>
+      <li>Quality grades, refine, promotion and hammer mastery with school specialization.</li>
+      <li>School runes, including Runesmith and Occult.</li>
+      <li>Runic Manuscripts as rare chest loot from any mod.</li>
+      <li>Runic Awakening, Ego Awakening and Ego Spirits.</li>
+      <li>The Black Lotus mana pistol (TACZ).</li>
+      <li>Patchouli guide book.</li>
+    </ul>
+  </div>
+</section>
+
+</main>
+<footer>
+  <span class="r">ᚱᚢᚾᛖᚠᛟᚱᚷᛖᛞ</span>
+  <p>Runeforged by BlueLotusCoding. Not affiliated with Iron's Spells 'n Spellbooks or Overgeared.</p>
+</footer>
+</body>
+</html>

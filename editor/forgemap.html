@@ -1,0 +1,1923 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Runeforge Forgemap Editor</title>
+  <style>
+    :root {
+      --bg: #0e0e14;
+      --panel: #16161f;
+      --border: #2a2a3a;
+      --accent: #7c4dff;
+      --accent2: #ff5252;
+      --support: #00bcd4;
+      --text: #e0e0e0;
+      --text-dim: #888;
+      --primary-note: #ff9800;
+      --approach-ring: rgba(255,152,0,0.25);
+      --support-note: #00bcd4;
+      --approach-ring-s: rgba(0,188,212,0.20);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; font-size: 13px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+    /* ── Header ───────────────────────────────────────────── */
+    header { display: flex; align-items: center; gap: 12px; padding: 8px 16px; background: var(--panel); border-bottom: 1px solid var(--border); flex-shrink: 0; }
+    header h1 { font-size: 15px; font-weight: 600; letter-spacing: 1px; color: var(--accent); }
+    .header-spacer { flex: 1; }
+    button { background: var(--accent); color: #fff; border: none; padding: 5px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; transition: opacity .15s; }
+    button:hover { opacity: .85; }
+    button.danger { background: var(--accent2); }
+    button.secondary { background: #333; border: 1px solid var(--border); }
+    button.osz { background: #2d6a4f; }
+
+    /* ── Main Layout ──────────────────────────────────────── */
+      .view-toggle { display: flex; gap: 0; border-radius: 4px; overflow: hidden; border: 1px solid var(--border); }
+      .view-toggle button { border-radius: 0; border: none; padding: 5px 10px; font-size: 11px; background: #222; color: var(--text-dim); }
+      .view-toggle button.active { background: var(--accent); color: #fff; }
+      .time-scrubber { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-dim); }
+      .time-scrubber input[type=range] { width: 120px; accent-color: var(--accent); cursor: pointer; }
+
+      /* ── Main Layout ──────────────────────────────────────── */
+    .main { display: flex; flex: 1; overflow: hidden; }
+
+    /* ── Left Panel: Meta ─────────────────────────────────── */
+    .panel { background: var(--panel); border-right: 1px solid var(--border); padding: 12px; display: flex; flex-direction: column; gap: 10px; width: 200px; flex-shrink: 0; overflow-y: auto; }
+    .panel h2 { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); margin-bottom: 2px; }
+    .section-help { color: var(--text-dim); font-size: 11px; line-height: 1.35; margin-top: -4px; }
+    label { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--text-dim); }
+    input, select, textarea { background: #0e0e14; border: 1px solid var(--border); color: var(--text); padding: 5px 7px; border-radius: 3px; font-size: 12px; width: 100%; }
+    input:focus, select:focus, textarea:focus { outline: 1px solid var(--accent); }
+    .divider { border: none; border-top: 1px solid var(--border); }
+    .schema-status { font-size: 11px; margin-top: 4px; }
+    .schema-status.ok { color: #67d36f; }
+    .schema-status.bad { color: #ff6b6b; }
+    .schema-errors { margin: 6px 0 0 14px; padding: 0; color: #ff9b9b; font-size: 11px; line-height: 1.4; max-height: 120px; overflow-y: auto; }
+
+    /* ── Center: Canvas + Timeline ───────────────────────── */
+    .center { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: #0a0a10; }
+    .canvas-wrap { display: flex; justify-content: center; align-items: center; flex: 1; padding: 16px; }
+    canvas#play-area { border: 2px solid var(--border); cursor: crosshair; background: #0b0b13; border-radius: 4px; }
+
+    /* Note type toggle */
+    .note-type-bar { display: flex; gap: 6px; justify-content: center; padding: 6px 0 2px; flex-shrink: 0; }
+    .note-type-btn { padding: 4px 18px; border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: .5px; cursor: pointer; border: 2px solid transparent; }
+    .note-type-btn.primary { background: rgba(255,152,0,.15); color: var(--primary-note); border-color: var(--primary-note); }
+    .note-type-btn.support { background: rgba(0,188,212,.15); color: var(--support-note); border-color: var(--support-note); }
+    .note-type-btn.slider  { background: rgba(255,100,200,.15); color: #ff64c8; border-color: #ff64c8; }
+    .note-type-btn.active { opacity: 1; }
+    .note-type-btn:not(.active) { opacity: .4; }
+
+    /* ── Timeline ────────────────────────────────────────── */
+    .timeline-section { border-top: 1px solid var(--border); padding: 8px 12px 6px; flex-shrink: 0; background: var(--panel); }
+    .timeline-section h3 { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); margin-bottom: 5px; }
+    #timeline { width: 100%; height: 48px; background: #0a0a10; border: 1px solid var(--border); border-radius: 3px; cursor: pointer; display: block; }
+
+    /* ── Right Panel: Notes list ──────────────────────────── */
+    .right-panel { width: 210px; flex-shrink: 0; background: var(--panel); border-left: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+    .right-panel h2 { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); padding: 10px 10px 6px; border-bottom: 1px solid var(--border); }
+    #note-list { flex: 1; overflow-y: auto; }
+    .note-item { display: flex; align-items: center; gap: 6px; padding: 5px 8px; border-bottom: 1px solid #1a1a24; cursor: pointer; transition: background .1s; font-size: 11px; }
+    .note-item:hover { background: #1e1e2e; }
+    .note-item.selected { background: #1e1e3a; }
+    .note-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .note-dot.primary { background: var(--primary-note); }
+    .note-dot.support { background: var(--support-note); }
+    .note-dot.slider  { background: #ff64c8; }
+    .note-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .note-del { color: var(--accent2); font-size: 14px; line-height: 1; cursor: pointer; padding: 0 2px; opacity: .5; }
+    .note-del:hover { opacity: 1; }
+
+    /* Note edit panel */
+    .note-edit { padding: 10px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 7px; }
+    .note-edit h3 { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); }
+
+    /* ── Status bar ──────────────────────────────────────── */
+    .status-bar { display: flex; gap: 16px; align-items: center; padding: 4px 14px; background: #111118; border-top: 1px solid var(--border); font-size: 11px; color: var(--text-dim); flex-shrink: 0; }
+    .status-bar span { color: var(--text); }
+
+    /* ── Modals ──────────────────────────────────────────── */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.7); display: flex; align-items: center; justify-content: center; z-index: 100; }
+    .modal-overlay.hidden { display: none; }
+    .modal { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 20px; min-width: 400px; max-width: 640px; max-height: 80vh; display: flex; flex-direction: column; gap: 12px; }
+    .modal h2 { font-size: 14px; color: var(--accent); }
+    .modal textarea { height: 300px; font-family: monospace; font-size: 11px; resize: vertical; }
+    .modal-btns { display: flex; gap: 8px; justify-content: flex-end; }
+  </style>
+</head>
+<body>
+
+<!-- ── Header ─────────────────────────────────────────────── -->
+<header>
+  <h1>⚒ RUNEFORGE EDITOR</h1>
+  <div class="header-spacer"></div>
+  <button class="osz" onclick="triggerOszImport()">Import .osz</button>
+  <button class="secondary" onclick="loadJSON()">Load JSON</button>
+  <button onclick="exportJSON()">Export JSON</button>
+  <button onclick="openPackExport()" title="Download a datapack (and a resource pack for your music) ready to drop into Minecraft">Export pack (.zip)</button>
+  <button class="danger" onclick="clearAll()">Clear</button>
+  <input type="file" id="osz-file-input" accept=".osz,.zip" style="display:none" onchange="handleOszFile(event)" />
+      <div style="width:1px;background:var(--border);height:20px;margin:0 2px"></div>
+      <div class="view-toggle">
+        <button id="btn-view-all" class="active" onclick="setViewMode('all')" title="Show all notes on canvas at once">All</button>
+        <button id="btn-view-window" onclick="setViewMode('window')" title="Show only notes near current time — simulates in-game view">Preview</button>
+      </div>
+      <div class="time-scrubber" id="scrubber-wrap" style="display:none">
+        <button id="btn-preview-play" onclick="previewPlayPause()" style="padding:3px 12px;font-size:12px">▶ Play</button>
+        <button onclick="previewStop()" style="padding:3px 10px;font-size:12px;background:#333;border:1px solid var(--border)">■ Stop</button>
+        <button onclick="triggerMusicImport()" style="padding:3px 10px;font-size:12px;background:#333;border:1px solid var(--border)">♫ Load Audio</button>
+        <span id="music-track-label" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-dim);font-size:11px">No audio</span>
+        <span id="preview-time-label" style="min-width:70px;color:var(--text);font-variant-numeric:tabular-nums;font-size:11px">0 ticks</span>
+        <span style="color:var(--text-dim);font-size:10px">Approach ring shrinks to note — simulates in-game view</span>
+      </div>
+      <input type="file" id="osz-file-input" accept=".osz,.zip" style="display:none" onchange="handleOszFile(event)" />
+      <input type="file" id="music-file-input" accept="audio/*" style="display:none" onchange="handleMusicFile(event)" />
+  <input type="file" id="json-file-input" accept=".json" style="display:none" onchange="handleJsonFile(event)" />
+</header>
+
+<!-- ── Main Layout ────────────────────────────────────────── -->
+<div class="main">
+
+  <!-- Left panel: metadata -->
+  <div class="panel">
+    <h2 title="Core map identity used for lookup and organization.">Map</h2>
+    <div class="section-help" title="These fields define what the map is called, what tier it targets, and which school id it routes to.">Identity and routing for this forgemap.</div>
+    <label title="Human-readable map name used in exports and editor organization.">Name <input id="meta-name" type="text" value="baseline_tier1" /></label>
+    <label title="Hammer mastery tier this map plays at. Hammers reach tiers 0 to 4.">Tier (0–4) <input id="meta-tier" type="number" min="0" max="4" step="1" value="1" /></label>
+    <label title="Use none for baseline maps. Otherwise enter the full school id, such as irons_spellbooks:fire. School maps play when the hammer is specialized in the same school as the rune.">School
+      <input id="meta-school" type="text" list="school-suggestions" value="none" placeholder="none or irons_spellbooks:fire" />
+      <datalist id="school-suggestions">
+        <option value="none"></option>
+        <option value="irons_spellbooks:fire"></option>
+        <option value="irons_spellbooks:ice"></option>
+        <option value="irons_spellbooks:lightning"></option>
+        <option value="irons_spellbooks:holy"></option>
+        <option value="irons_spellbooks:ender"></option>
+        <option value="irons_spellbooks:blood"></option>
+        <option value="irons_spellbooks:evocation"></option>
+        <option value="irons_spellbooks:nature"></option>
+        <option value="irons_spellbooks:eldritch"></option>
+      </datalist>
+    </label>
+    <label title="When several maps share a tier and school, one is picked at random. A map with weight 3 is picked three times as often as a map with weight 1.">Weight <input id="meta-weight" type="number" min="1" max="1000" step="1" value="1" /></label>
+
+    <hr class="divider" />
+  <h2 title="Preview timing hints used by the editor and runtime approach presentation.">Timing</h2>
+  <div class="section-help" title="Tick-based only. Approach Ticks affects when rings begin shrinking before the note timing point.">Tick-based preview timing only.</div>
+  <label title="How many ticks before the hit moment the approach ring should begin shrinking.">Approach Ticks <input id="meta-approach" type="number" min="5" max="80" value="20" /></label>
+  <label title="Music asset path used during runtime. Use namespace:path such as iss_runeforged:minigame/tetsu_uchi_uta.">Music Track <input id="meta-music-track" type="text" value="" placeholder="iss_runeforged:minigame/tetsu_uchi_uta" /></label>
+  <label title="Music playback offset in ticks. Positive values delay note alignment against audio.">Music Offset ticks <input id="meta-music-offset" type="number" value="0" /></label>
+  <label title="Percent of timeline height used by the top song lane.">Song lane height % <input id="timeline-song-lane" type="number" min="20" max="80" value="35" /></label>
+
+    <hr class="divider" />
+  <h2 title="Speed, target scale, accuracy, and rarity thresholds used by the server.">Scoring</h2>
+  <div class="section-help" title="Speed changes the approach feel, scale changes the valid target size, and accuracy changes timing strictness.">These values govern the three performance dimensions.</div>
+  <label title="Approach speed multiplier. Values above 1 make the approach ring close faster.">Speed approach × <input id="sc-speed-approach" type="number" min="0.1" max="4" step="0.05" value="1.0" /></label>
+  <label title="Response window used to score reaction speed.">Speed response ticks <input id="sc-speed-response" type="number" min="1" max="100" value="10" /></label>
+  <label title="Action target size multiplier. Values below 1 make targets smaller.">Action scale × <input id="sc-scale-action" type="number" min="0.25" max="2" step="0.05" value="1.0" /></label>
+  <label title="Support target size multiplier. Values below 1 make support targets smaller.">Support scale × <input id="sc-scale-support" type="number" min="0.25" max="2" step="0.05" value="1.0" /></label>
+  <label title="Timing window for a perfect result.">Perfect window ticks <input id="sc-accuracy-perfect" type="number" min="1" max="100" value="2" /></label>
+  <label title="Timing window for a good result.">Good window ticks <input id="sc-accuracy-good" type="number" min="1" max="100" value="4" /></label>
+  <label title="Relative weight of reaction speed in the final score.">Speed weight <input id="sc-weight-speed" type="number" min="0" max="1" step="0.05" value="0.3" /></label>
+  <label title="Relative weight of target-scale precision in the final score.">Scale weight <input id="sc-weight-scale" type="number" min="0" max="1" step="0.05" value="0.2" /></label>
+  <label title="Relative weight of timing accuracy in the final score.">Accuracy weight <input id="sc-weight-accuracy" type="number" min="0" max="1" step="0.05" value="0.5" /></label>
+  <label title="Minimum weighted performance score for Uncommon.">Uncommon threshold <input id="sc-threshold-uncommon" type="number" min="0" max="100" value="50" /></label>
+  <label title="Minimum weighted performance score for Rare.">Rare threshold <input id="sc-threshold-rare" type="number" min="0" max="100" value="70" /></label>
+  <label title="Minimum weighted performance score for Epic.">Epic threshold <input id="sc-threshold-epic" type="number" min="0" max="100" value="85" /></label>
+  <label title="Minimum weighted performance score for Legendary.">Legendary threshold <input id="sc-threshold-legendary" type="number" min="0" max="100" value="95" /></label>
+  <label title="Minimum weighted performance score for Myth.">Myth threshold <input id="sc-threshold-myth" type="number" min="0" max="100" value="98" /></label>
+  <div class="section-help">Feedback points below affect live score popups; rarity uses the weighted dimensions above.</div>
+  <label title="Points added for a perfectly timed primary hit.">Perfect <input id="sc-perfect" type="number" value="100" /></label>
+  <label title="Points added for a good timed primary hit.">Good <input id="sc-good" type="number" value="50" /></label>
+  <label title="Points added or removed for a primary miss.">Miss <input id="sc-miss" type="number" value="-5" /></label>
+  <label title="Points added for hitting a support note inside its timing window.">Support Hit <input id="sc-support-hit" type="number" value="25" /></label>
+  <label title="Chain modifier penalty applied when a support note is missed.">Support Miss <input id="sc-support-miss" type="number" step="0.1" value="-0.5" /></label>
+
+    <hr class="divider" />
+    <h2 title="Runs local structural validation against the current forgemap object.">Schema Check</h2>
+    <button class="secondary" onclick="runSchemaCheck()">Validate Now</button>
+    <div id="schema-status" class="schema-status">Not validated yet</div>
+    <ul id="schema-errors" class="schema-errors"></ul>
+
+    <hr class="divider" />
+    <h2 title="Controls used while placing or editing notes on the canvas.">Placement</h2>
+    <div class="section-help" title="Place notes at a timeline tick, define their timing window, and optionally auto-step time after each placement.">Author note timing and spacing here.</div>
+    <label title="Allowed timing window for the next placed note.">Hit Window ticks <input id="place-window" type="number" min="1" max="40" value="4" /></label>
+    <label title="Absolute timeline tick where the next placed note will spawn.">Current time ticks <input id="place-time" type="number" min="0" step="1" value="0" /></label>
+    <label title="Toggle whether the placement cursor moves automatically after placing a note.">
+      Auto-advance enabled
+      <input id="auto-advance-enabled" type="checkbox" />
+    </label>
+    <label title="How far to move Current time after placing a note.">Auto-advance ticks
+      <input id="auto-advance" type="number" min="0" step="1" value="10" />
+    </label>
+    <small style="color:var(--text-dim);display:block;margin:0;">Use keyboard Arrow keys to move the placement tick; Space toggles preview play/pause.</small>
+    <small style="color:var(--text-dim)">Click canvas to place. Time auto-advances after each note when enabled.</small>
+  </div>
+
+  <!-- Center: canvas + timeline -->
+  <div class="center">
+    <div class="note-type-bar">
+      <button class="note-type-btn primary active" id="btn-primary" onclick="setNoteType('primary')">● Primary</button>
+      <button class="note-type-btn support" id="btn-support" onclick="setNoteType('support')">○ Support</button>
+      <button class="note-type-btn slider" id="btn-slider" onclick="setNoteType('slider')">→ Slider</button>
+    </div>
+    <div class="canvas-wrap">
+      <canvas id="play-area" width="600" height="450"></canvas>
+    </div>
+    <div class="timeline-section">
+      <h3 title="Absolute tick timeline. Click anywhere to move the placement cursor.">Timeline - click to set placement time</h3>
+      <canvas id="timeline"></canvas>
+    </div>
+  </div>
+
+  <!-- Right panel: note list + edit -->
+  <div class="right-panel">
+    <h2>Notes (<span id="note-count">0</span>)</h2>
+    <div id="note-list"></div>
+    <div class="note-edit" id="note-edit-panel" style="display:none">
+      <h3 title="Edit the currently selected note from the list or canvas.">Edit Selected Note</h3>
+      <label title="Switch the selected note between required primary and optional support.">Type
+        <select id="edit-type">
+          <option value="primary">primary</option>
+          <option value="support">support</option>
+          <option value="slider">slider</option>
+        </select>
+      </label>
+      <label title="Absolute tick where this note should become active.">Spawn time ticks <input id="edit-time" type="number" min="0" /></label>
+      <label title="Timing window for hitting this selected note.">Hit window ticks <input id="edit-window" type="number" min="1" max="40" /></label>
+      <div id="slider-edit-fields" style="display:none;flex-direction:column;gap:7px">
+        <label title="Normalized X position of the slider end circle.">End X (0–1) <input id="edit-slider-end-x" type="number" min="0" max="1" step="0.01" /></label>
+        <label title="Normalized Y position of the slider end circle.">End Y (0–1) <input id="edit-slider-end-y" type="number" min="0" max="1" step="0.01" /></label>
+        <label title="Ticks the ball takes to travel from start to end.">Duration ticks <input id="edit-slider-duration" type="number" min="1" /></label>
+      </div>
+      <button onclick="applyNoteEdit()">Apply</button>
+      <button class="danger" onclick="deleteSelectedNote()">Delete</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- Status bar -->
+<div class="status-bar">
+  Notes: <span id="st-total">0</span> total &nbsp;|&nbsp;
+  Primary: <span id="st-primary">0</span> &nbsp;|&nbsp;
+  Slider: <span id="st-slider">0</span> &nbsp;|&nbsp;
+  Support: <span id="st-support">0</span> &nbsp;|&nbsp;
+  Duration: <span id="st-duration">0</span> ticks &nbsp;|&nbsp;
+  <span id="st-hint" style="color:var(--text-dim)">Click the play area to place notes</span>
+</div>
+
+<!-- Export modal -->
+<div class="modal-overlay hidden" id="export-modal">
+  <div class="modal">
+    <h2>Export Forgemap JSON</h2>
+    <textarea id="export-text" readonly></textarea>
+    <div class="modal-btns">
+      <button class="secondary" onclick="copyExport()">Copy to Clipboard</button>
+      <button onclick="downloadExport()">Download .json</button>
+      <button class="secondary" onclick="closeModal('export-modal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Export pack modal -->
+<div class="modal-overlay hidden" id="pack-modal">
+  <div class="modal">
+    <h2>Export as a pack</h2>
+    <div class="section-help">Builds a .zip with a datapack for this map. If you loaded an .ogg with Load Audio, it also builds a resource pack so the song plays in game.</div>
+    <label title="Your pack's namespace: lowercase letters, digits, _ - and . only.">Namespace <input id="pack-namespace" type="text" value="my_forgemaps" /></label>
+    <label title="File name for the map, without .json. Use iss_runeforged and the same name as a bundled map (such as baseline_tier2) to replace it.">Map file name <input id="pack-file" type="text" value="" placeholder="my_map" /></label>
+    <div class="section-help" id="pack-music-note"></div>
+    <ul id="pack-errors" style="color:var(--danger, #ff6b6b);font-size:11px;margin:0 0 0 16px"></ul>
+    <div class="modal-btns">
+      <button onclick="downloadPack()">Download .zip</button>
+      <button class="secondary" onclick="closeModal('pack-modal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Import JSON modal -->
+<div class="modal-overlay hidden" id="import-modal">
+  <div class="modal">
+    <h2>Import Forgemap JSON</h2>
+    <textarea id="import-text" placeholder="Paste forgemap JSON here..."></textarea>
+    <div class="modal-btns">
+      <button onclick="applyImport()">Import</button>
+      <button class="secondary" onclick="closeModal('import-modal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- OSZ/osu import modal -->
+<div class="modal-overlay hidden" id="osz-modal">
+  <div class="modal">
+    <h2>Import from .osz / .osu</h2>
+    <p style="color:var(--text-dim);font-size:12px">Extracted beatmap info from the .osz file. Select a difficulty and click Convert.</p>
+    <label>Difficulty
+      <select id="osz-diff-select" style="margin-top:4px"></select>
+    </label>
+    <label style="margin-top:8px">Time scale (ticks per beat)
+      <input id="osz-scale" type="number" value="500" min="100" max="2000" />
+    </label>
+    <label style="margin-top:4px">Max notes to import
+      <input id="osz-max-notes" type="number" value="20" min="1" max="100" />
+    </label>
+    <div class="modal-btns">
+      <button onclick="convertOsz()">Convert & Load</button>
+      <button class="secondary" onclick="closeModal('osz-modal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// State
+// ─────────────────────────────────────────────────────────────────────────────
+let notes = [];          // { id, sequence, type, spawn_time_ticks, hit_window_ticks, position: {x,y} [, slider_end: {x,y}, slider_duration_ticks, slider_path_points: [{x,y},...]] }
+let selectedIdx = -1;
+let nextNoteSequence = 0;
+let placingType = 'primary';
+let pendingSlider = null;  // { x, y, spawnTime, hitWindow, pathPoints } — first click stored while waiting for second
+let sliderDrawing = false;  // true while dragging to draw slider
+let sliderPath = [];        // path points during drag (0-1 normalized coords)
+let suppressNextCanvasClick = false; // true when mouseup already finalized a slider
+let oszDifficulties = []; // cached from osz parse
+let viewMode = 'all';     // 'all' | 'window'
+let previewTime    = 0;    // current playback position in ticks
+let previewPlaying = false;
+let previewRAF     = null;
+let previewLastTs  = 0;
+let previewAudio   = null;
+let previewAudioUrl = null;
+let previewAudioFile = null;  // the File picked with Load Audio, kept for pack export
+
+// Canvas refs
+const playCanvas  = document.getElementById('play-area');
+const tlCanvas    = document.getElementById('timeline');
+const playCtx     = playCanvas.getContext('2d');
+const tlCtx       = tlCanvas.getContext('2d');
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Resize timeline canvas to fill container
+// ─────────────────────────────────────────────────────────────────────────────
+function resizeTimeline() {
+  const wrap = tlCanvas.parentElement;
+  tlCanvas.width  = wrap.clientWidth - 24;
+  tlCanvas.height = 48;
+  drawTimeline();
+}
+window.addEventListener('resize', resizeTimeline);
+setTimeout(resizeTimeline, 100);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Drawing
+// ─────────────────────────────────────────────────────────────────────────────
+const NOTE_RADIUS = 18;
+const APPROACH_RADIUS = 38;
+
+function drawPlayArea() {
+  const W = playCanvas.width, H = playCanvas.height;
+  playCtx.clearRect(0, 0, W, H);
+
+  // Grid
+  playCtx.strokeStyle = 'rgba(255,255,255,0.04)';
+  playCtx.lineWidth = 1;
+  for (let i = 1; i < 4; i++) {
+    playCtx.beginPath(); playCtx.moveTo(i * W / 4, 0); playCtx.lineTo(i * W / 4, H); playCtx.stroke();
+    playCtx.beginPath(); playCtx.moveTo(0, i * H / 4); playCtx.lineTo(W, i * H / 4); playCtx.stroke();
+  }
+
+  // Center crosshair
+  playCtx.strokeStyle = 'rgba(255,255,255,0.06)';
+  playCtx.beginPath(); playCtx.moveTo(W/2, 0); playCtx.lineTo(W/2, H); playCtx.stroke();
+  playCtx.beginPath(); playCtx.moveTo(0, H/2); playCtx.lineTo(W, H/2); playCtx.stroke();
+
+  // ── Preview mode: animated playback ───────────────────────
+  if (viewMode === 'window') {
+    const approachTicks = numOr(document.getElementById('meta-approach').value, 20, true);
+    const primaryNotes = notes.filter(n => n.type === 'primary');
+    const RING_MAX     = Math.min(W, H) * 0.38;
+
+    playCtx.fillStyle = 'rgba(0,0,5,0.55)';
+    playCtx.fillRect(0, 0, W, H);
+
+    notes.forEach(note => {
+      const isSliderWindow = note.type === 'slider';
+      const sliderDuration = isSliderWindow ? (Number(note.slider_duration_ticks) || 0) : 0;
+      const tStart = note.spawn_time_ticks - approachTicks;
+      const tEnd   = note.spawn_time_ticks + sliderDuration + note.hit_window_ticks;
+      if (previewTime < tStart || previewTime > tEnd) return;
+
+      const isPrimary = note.type === 'primary';
+      const isSlider  = note.type === 'slider';
+      const cx = note.position.x * W;
+      const cy = note.position.y * H;
+      const color = isPrimary ? '#ff9800' : isSlider ? '#ff64c8' : '#00bcd4';
+
+      const progress  = Math.min(1, Math.max(0, (previewTime - tStart) / approachTicks));
+      const fadeBaseTick = isSlider ? note.spawn_time_ticks + sliderDuration : note.spawn_time_ticks;
+      const fadeAlpha = previewTime > fadeBaseTick
+        ? Math.max(0, 1 - (previewTime - fadeBaseTick) / note.hit_window_ticks)
+        : 1;
+
+      // Slider rendering with animated ball
+      if (isSlider && note.slider_end) {
+        const ex = note.slider_end.x * W, ey = note.slider_end.y * H;
+        const sliderStart = note.spawn_time_ticks;
+        const sliderEnd = sliderStart + note.slider_duration_ticks;
+        
+        // Draw track line (curved or straight)
+        playCtx.strokeStyle = `rgba(255,100,200,${0.5 * fadeAlpha})`;
+        playCtx.lineWidth = 3;
+        playCtx.setLineDash([5,3]);
+        playCtx.beginPath();
+        if (note.slider_path_points && note.slider_path_points.length > 1) {
+          playCtx.moveTo(note.slider_path_points[0].x * W, note.slider_path_points[0].y * H);
+          for (let i = 1; i < note.slider_path_points.length; i++) {
+            playCtx.lineTo(note.slider_path_points[i].x * W, note.slider_path_points[i].y * H);
+          }
+        } else {
+          playCtx.moveTo(cx, cy);
+          playCtx.lineTo(ex, ey);
+        }
+        playCtx.stroke();
+        playCtx.setLineDash([]);
+        
+        if (previewTime < sliderStart) {
+          // Before tap1: show start circle with approach ring
+          if (progress < 1) {
+            const ringR = RING_MAX + (NOTE_RADIUS - RING_MAX) * progress;
+            playCtx.beginPath();
+            playCtx.arc(cx, cy, ringR, 0, Math.PI * 2);
+            playCtx.strokeStyle = `rgba(255,100,200,${0.8 * fadeAlpha})`;
+            playCtx.lineWidth = 2.5;
+            playCtx.stroke();
+          }
+          playCtx.globalAlpha = fadeAlpha;
+          playCtx.beginPath();
+          playCtx.arc(cx, cy, NOTE_RADIUS, 0, Math.PI * 2);
+          playCtx.fillStyle = color + '99';
+          playCtx.fill();
+          playCtx.strokeStyle = color;
+          playCtx.lineWidth = 2.5;
+          playCtx.stroke();
+        } else if (previewTime < sliderEnd) {
+          // Ball moving: show both circles + animated ball
+          const ballT = (previewTime - sliderStart) / note.slider_duration_ticks;
+          let ballX, ballY;
+          
+          // Interpolate ball position along path if available
+          if (note.slider_path_points && note.slider_path_points.length > 1) {
+            const scaledT = ballT * (note.slider_path_points.length - 1);
+            const idx = Math.min(Math.floor(scaledT), note.slider_path_points.length - 2);
+            const localT = scaledT - idx;
+            const p1 = note.slider_path_points[idx];
+            const p2 = note.slider_path_points[idx + 1];
+            ballX = (p1.x + (p2.x - p1.x) * localT) * W;
+            ballY = (p1.y + (p2.y - p1.y) * localT) * H;
+          } else {
+            ballX = cx + (ex - cx) * ballT;
+            ballY = cy + (ey - cy) * ballT;
+          }
+          
+          playCtx.globalAlpha = fadeAlpha;
+          // Start circle (faded)
+          playCtx.beginPath();
+          playCtx.arc(cx, cy, NOTE_RADIUS, 0, Math.PI * 2);
+          playCtx.fillStyle = color + '44';
+          playCtx.fill();
+          playCtx.strokeStyle = color;
+          playCtx.lineWidth = 1.5;
+          playCtx.stroke();
+          
+          // Animated ball
+          playCtx.beginPath();
+          playCtx.arc(ballX, ballY, NOTE_RADIUS * 0.8, 0, Math.PI * 2);
+          playCtx.fillStyle = color;
+          playCtx.fill();
+          playCtx.strokeStyle = '#fff';
+          playCtx.lineWidth = 2;
+          playCtx.stroke();
+          
+          // End circle with approach-like ring
+          const endProgress = Math.min(1, Math.max(0, (previewTime - (sliderEnd - approachTicks)) / approachTicks));
+          if (endProgress < 1) {
+            const ringR = RING_MAX + (NOTE_RADIUS - RING_MAX) * endProgress;
+            playCtx.beginPath();
+            playCtx.arc(ex, ey, ringR, 0, Math.PI * 2);
+            playCtx.strokeStyle = `rgba(255,100,200,${0.8 * fadeAlpha})`;
+            playCtx.lineWidth = 2.5;
+            playCtx.stroke();
+          }
+          playCtx.beginPath();
+          playCtx.arc(ex, ey, NOTE_RADIUS, 0, Math.PI * 2);
+          playCtx.fillStyle = color + '99';
+          playCtx.fill();
+          playCtx.strokeStyle = color;
+          playCtx.lineWidth = 2.5;
+          playCtx.stroke();
+        } else {
+          // After tap2 window: hidden
+        }
+        playCtx.globalAlpha = 1;
+      } else {
+        // Primary/support rendering
+        if (progress < 1) {
+          const ringR = RING_MAX + (NOTE_RADIUS - RING_MAX) * progress;
+          playCtx.beginPath();
+          playCtx.arc(cx, cy, ringR, 0, Math.PI * 2);
+          playCtx.strokeStyle = isPrimary
+            ? `rgba(255,152,0,${0.8 * fadeAlpha})`
+            : `rgba(0,188,212,${0.8 * fadeAlpha})`;
+          playCtx.lineWidth = 2.5;
+          playCtx.stroke();
+        }
+
+        playCtx.globalAlpha = Math.max(0, fadeAlpha);
+        playCtx.beginPath();
+        playCtx.arc(cx, cy, NOTE_RADIUS, 0, Math.PI * 2);
+        playCtx.fillStyle = color + '99';
+        playCtx.fill();
+        playCtx.strokeStyle = color;
+        playCtx.lineWidth = 2.5;
+        playCtx.stroke();
+
+        if (isPrimary) {
+          const num = primaryNotes.indexOf(note) + 1;
+          playCtx.fillStyle = '#fff';
+          playCtx.font = `bold ${num > 9 ? 11 : 13}px Segoe UI`;
+          playCtx.textAlign = 'center';
+          playCtx.textBaseline = 'middle';
+          playCtx.fillText(String(num), cx, cy);
+        }
+        playCtx.globalAlpha = 1;
+      }
+    });
+
+    const maxTime = notes.length
+      ? Math.max(...notes.map(n => n.spawn_time_ticks + (n.type === 'slider' ? (Number(n.slider_duration_ticks) || 0) : 0))) + 40
+      : 40;
+    const barW = W - 24;
+    playCtx.fillStyle = 'rgba(255,255,255,0.08)';
+    playCtx.fillRect(12, H - 18, barW, 5);
+    playCtx.fillStyle = 'rgba(124,77,255,0.85)';
+    playCtx.fillRect(12, H - 18, barW * Math.min(1, previewTime / maxTime), 5);
+
+    playCtx.fillStyle = 'rgba(180,160,255,0.9)';
+    playCtx.font = '11px Segoe UI';
+    playCtx.textAlign = 'left';
+    playCtx.textBaseline = 'top';
+    playCtx.fillText(`${Math.round(previewTime)}ticks / ${maxTime}ticks`, 12, 10);
+    return;
+  }
+
+  // ── All mode: draw all notes statically ────────────────────
+  const primaryNotes = notes.filter(n => n.type === 'primary');
+
+  // Draw slider tracks first (behind circles)
+  notes.forEach(n => {
+    if (n.type !== 'slider' || !n.slider_end) return;
+    const sx = n.position.x * W, sy = n.position.y * H;
+    const ex = n.slider_end.x * W, ey = n.slider_end.y * H;
+    playCtx.strokeStyle = 'rgba(255,100,200,0.3)';
+    playCtx.lineWidth = 3;
+    playCtx.setLineDash([5, 5]);
+    
+    // Draw curved path if available, otherwise straight line
+    if (n.slider_path_points && n.slider_path_points.length > 1) {
+      playCtx.beginPath();
+      playCtx.moveTo(n.slider_path_points[0].x * W, n.slider_path_points[0].y * H);
+      for (let i = 1; i < n.slider_path_points.length; i++) {
+        playCtx.lineTo(n.slider_path_points[i].x * W, n.slider_path_points[i].y * H);
+      }
+      playCtx.stroke();
+    } else {
+      playCtx.beginPath();
+      playCtx.moveTo(sx, sy);
+      playCtx.lineTo(ex, ey);
+      playCtx.stroke();
+    }
+    playCtx.setLineDash([]);
+  });
+
+  // Pending slider first-click ghost
+  if (pendingSlider) {
+    const px = pendingSlider.x * W, py = pendingSlider.y * H;
+    playCtx.beginPath();
+    playCtx.arc(px, py, NOTE_RADIUS, 0, Math.PI * 2);
+    playCtx.fillStyle = 'rgba(255,100,200,0.3)';
+    playCtx.fill();
+    playCtx.strokeStyle = '#ff64c8';
+    playCtx.lineWidth = 2;
+    playCtx.stroke();
+    
+    // Draw path if dragging
+    if (sliderPath.length > 1) {
+      playCtx.strokeStyle = '#ff64c8';
+      playCtx.lineWidth = 2;
+      playCtx.setLineDash([3, 2]);
+      playCtx.beginPath();
+      playCtx.moveTo(sliderPath[0].x * W, sliderPath[0].y * H);
+      for (let i = 1; i < sliderPath.length; i++) {
+        playCtx.lineTo(sliderPath[i].x * W, sliderPath[i].y * H);
+      }
+      playCtx.stroke();
+      playCtx.setLineDash([]);
+    }
+  }
+
+  notes.forEach((note, i) => {
+    const cx = note.position.x * W;
+    const cy = note.position.y * H;
+    const isPrimary = note.type === 'primary';
+    const isSlider  = note.type === 'slider';
+    const isSelected = i === selectedIdx;
+    const color = isPrimary ? '#ff9800' : isSlider ? '#ff64c8' : '#00bcd4';
+    const ringColor = isPrimary ? 'rgba(255,152,0,0.2)' : isSlider ? 'rgba(255,100,200,0.2)' : 'rgba(0,188,212,0.15)';
+
+    // Approach ring around start
+    playCtx.beginPath();
+    playCtx.arc(cx, cy, APPROACH_RADIUS, 0, Math.PI * 2);
+    playCtx.strokeStyle = isSelected ? (color + '80') : ringColor;
+    playCtx.lineWidth = isSelected ? 2 : 1;
+    playCtx.stroke();
+
+    // Start circle
+    playCtx.beginPath();
+    playCtx.arc(cx, cy, NOTE_RADIUS, 0, Math.PI * 2);
+    playCtx.fillStyle = isSelected ? color : color + '99';
+    playCtx.fill();
+    playCtx.strokeStyle = color;
+    playCtx.lineWidth = isSelected ? 3 : 2;
+    playCtx.stroke();
+
+    if (isPrimary) {
+      const num = primaryNotes.indexOf(note) + 1;
+      playCtx.fillStyle = '#fff';
+      playCtx.font = `bold ${num > 9 ? 10 : 12}px Segoe UI`;
+      playCtx.textAlign = 'center';
+      playCtx.textBaseline = 'middle';
+      playCtx.fillText(String(num), cx, cy);
+    } else if (isSlider) {
+      // Arrow inside start circle
+      playCtx.fillStyle = '#fff';
+      playCtx.font = 'bold 11px Segoe UI';
+      playCtx.textAlign = 'center';
+      playCtx.textBaseline = 'middle';
+      playCtx.fillText('→', cx, cy);
+      // End circle (smaller, ghost)
+      if (note.slider_end) {
+        const ex = note.slider_end.x * W, ey = note.slider_end.y * H;
+        playCtx.beginPath();
+        playCtx.arc(ex, ey, NOTE_RADIUS - 4, 0, Math.PI * 2);
+        playCtx.fillStyle = color + '55';
+        playCtx.fill();
+        playCtx.strokeStyle = color;
+        playCtx.lineWidth = isSelected ? 2.5 : 1.5;
+        playCtx.stroke();
+      }
+    }
+
+    if (isSelected) {
+      playCtx.beginPath();
+      playCtx.arc(cx, cy, NOTE_RADIUS + 4, 0, Math.PI * 2);
+      playCtx.strokeStyle = color;
+      playCtx.lineWidth = 1;
+      playCtx.setLineDash([4, 3]);
+      playCtx.stroke();
+      playCtx.setLineDash([]);
+    }
+  });
+}
+
+function drawTimeline() {
+  const W = tlCanvas.width, H = tlCanvas.height;
+  tlCtx.clearRect(0, 0, W, H);
+
+  const maxTime = getTimelineMaxTicks();
+  const currentTime = (viewMode === 'window' || previewPlaying)
+    ? Math.round(previewTime)
+    : (numOr(document.getElementById('place-time').value, 0, true));
+  const songLanePct = Math.max(20, Math.min(80, numOr(document.getElementById('timeline-song-lane').value, 35, true)));
+  const songLaneH = Math.max(14, Math.round((H * songLanePct) / 100));
+  const hitLaneY = songLaneH + 1;
+  const hitLaneH = Math.max(10, H - hitLaneY);
+
+  // Background
+  tlCtx.fillStyle = '#0a0a10';
+  tlCtx.fillRect(0, 0, W, H);
+
+  // Song lane (top)
+  tlCtx.fillStyle = 'rgba(90,140,255,0.12)';
+  tlCtx.fillRect(0, 0, W, songLaneH);
+  tlCtx.fillStyle = 'rgba(130,170,255,0.28)';
+  tlCtx.fillRect(0, songLaneH - 1, W, 1);
+
+  // Hit lane (bottom)
+  tlCtx.fillStyle = 'rgba(0,0,0,0.12)';
+  tlCtx.fillRect(0, hitLaneY, W, hitLaneH);
+
+  // Current time cursor
+  const cursorX = (currentTime / maxTime) * W;
+  tlCtx.fillStyle = 'rgba(255,255,255,0.12)';
+  tlCtx.fillRect(cursorX - 1, 0, 2, H);
+
+  // Song progress strip in top lane
+  tlCtx.fillStyle = 'rgba(120,170,255,0.45)';
+  tlCtx.fillRect(0, Math.max(0, songLaneH - 5), Math.max(0, cursorX), 4);
+
+  tlCtx.fillStyle = '#b7ccff';
+  tlCtx.font = '9px Segoe UI';
+  tlCtx.textAlign = 'left';
+  tlCtx.fillText('SONG', 4, Math.max(9, songLaneH - 8));
+  tlCtx.fillStyle = '#ffd7a8';
+  tlCtx.fillText('HITS', 4, H - 4);
+
+  // Notes on timeline
+  notes.forEach((note, i) => {
+    const x = (note.spawn_time_ticks / maxTime) * W;
+    const isPrimary = note.type === 'primary';
+    const isSlider  = note.type === 'slider';
+    const color = isPrimary ? '#ff9800' : isSlider ? '#ff64c8' : '#00bcd4';
+    const isSelected = i === selectedIdx;
+
+    // Hit window bar
+    const windowW = (note.hit_window_ticks / maxTime) * W;
+    tlCtx.fillStyle = color + '33';
+    tlCtx.fillRect(x - windowW / 2, hitLaneY + 2, windowW, Math.max(4, hitLaneH - 4));
+
+    // Slider duration bar
+    if (isSlider && note.slider_duration_ticks) {
+      const durW = (note.slider_duration_ticks / maxTime) * W;
+      tlCtx.fillStyle = color + '22';
+      tlCtx.fillRect(x, hitLaneY + 2, durW, Math.max(4, hitLaneH - 4));
+
+      // Explicit slider end-hit marker
+      const xEnd = ((note.spawn_time_ticks + note.slider_duration_ticks) / maxTime) * W;
+      tlCtx.fillStyle = '#ff9dde';
+      tlCtx.fillRect(xEnd - 1, hitLaneY + 1, 2, Math.max(6, hitLaneH - 2));
+    }
+
+    // Note marker
+    tlCtx.fillStyle = isSelected ? color : color + 'bb';
+    tlCtx.fillRect(x - 3, hitLaneY, 6, hitLaneH);
+
+    // Label
+    tlCtx.fillStyle = '#fff';
+    tlCtx.font = '9px Segoe UI';
+    tlCtx.textAlign = 'center';
+    tlCtx.fillText(isPrimary ? `P${notes.filter((n,j) => n.type==='primary' && j<=i).length}` : isSlider ? 'SL' : 'S', x, H - 4);
+  });
+
+}
+
+function redraw() {
+  drawPlayArea();
+  drawTimeline();
+}
+
+function canvasPointFromEvent(e) {
+  const rect = playCanvas.getBoundingClientRect();
+  const scaleX = playCanvas.width  / rect.width;
+  const scaleY = playCanvas.height / rect.height;
+  const cx = (e.clientX - rect.left) * scaleX;
+  const cy = (e.clientY - rect.top)  * scaleY;
+  const nx = cx / playCanvas.width;
+  const ny = cy / playCanvas.height;
+  return { cx, cy, nx, ny };
+}
+
+function finalizeSliderPlacement(endNX, endNY) {
+  if (!pendingSlider) return;
+  const ps = pendingSlider;
+  const savedPathPoints = sliderPath.length > 1 ? [...sliderPath] : [];
+  let endX = endNX;
+  let endY = endNY;
+
+  // Prefer the actual drawn path endpoint when available.
+  if (savedPathPoints.length > 1) {
+    endX = savedPathPoints[savedPathPoints.length - 1].x;
+    endY = savedPathPoints[savedPathPoints.length - 1].y;
+  }
+
+  pendingSlider = null;
+  sliderPath = [];
+  sliderDrawing = false;
+
+  const durationTicks = numOr(document.getElementById('auto-advance').value, 20, true);
+  placeNoteAtTick(ps.spawnTime, 'slider', ps.hitWindow, ps.x, ps.y, {
+    sliderEnd: { x: endX, y: endY },
+    sliderDurationTicks: durationTicks,
+    sliderPathPoints: savedPathPoints
+  });
+  setHint(`Placed slider from (${ps.x}, ${ps.y}) → (${endX.toFixed(2)}, ${endY.toFixed(2)}) @ ${ps.spawnTime}t`);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Note interactions
+// ─────────────────────────────────────────────────────────────────────────────
+playCanvas.addEventListener('mousedown', e => {
+  if (placingType !== 'slider' || pendingSlider === null) return;
+  sliderDrawing = true;
+});
+
+playCanvas.addEventListener('mousemove', e => {
+  if (!sliderDrawing || placingType !== 'slider' || !pendingSlider) return;
+  const rect = playCanvas.getBoundingClientRect();
+  const scaleX = playCanvas.width  / rect.width;
+  const scaleY = playCanvas.height / rect.height;
+  const cx = (e.clientX - rect.left) * scaleX;
+  const cy = (e.clientY - rect.top)  * scaleY;
+  const nx = cx / playCanvas.width;
+  const ny = cy / playCanvas.height;
+  
+  if (sliderPath.length === 0 || Math.hypot(nx - sliderPath[sliderPath.length-1].x, ny - sliderPath[sliderPath.length-1].y) > 0.01) {
+    sliderPath.push({ x: parseFloat(nx.toFixed(3)), y: parseFloat(ny.toFixed(3)) });
+  }
+  redraw();
+});
+
+playCanvas.addEventListener('mouseup', e => {
+  if (!sliderDrawing || placingType !== 'slider' || !pendingSlider) {
+    sliderDrawing = false;
+    return;
+  }
+
+  const { nx, ny } = canvasPointFromEvent(e);
+  if (sliderPath.length === 0 || Math.hypot(nx - sliderPath[sliderPath.length - 1].x, ny - sliderPath[sliderPath.length - 1].y) > 0.01) {
+    sliderPath.push({ x: parseFloat(nx.toFixed(3)), y: parseFloat(ny.toFixed(3)) });
+  }
+
+  // Release-to-complete: if a path was actually drawn, finalize here.
+  if (sliderPath.length > 1) {
+    finalizeSliderPlacement(nx, ny);
+    suppressNextCanvasClick = true;
+  }
+  sliderDrawing = false;
+});
+
+playCanvas.addEventListener('click', e => {
+  if (suppressNextCanvasClick) {
+    suppressNextCanvasClick = false;
+    return;
+  }
+
+  const { cx, cy, nx, ny } = canvasPointFromEvent(e);
+
+  // Check if clicking an existing note
+  for (let i = notes.length - 1; i >= 0; i--) {
+    const n = notes[i];
+    const dx = (n.position.x * playCanvas.width)  - cx;
+    const dy = (n.position.y * playCanvas.height) - cy;
+    if (Math.sqrt(dx*dx + dy*dy) <= NOTE_RADIUS + 4) {
+      pendingSlider = null;
+      sliderPath = [];
+      sliderDrawing = false;
+      selectNote(i);
+      return;
+    }
+  }
+
+  // Place new note
+  const spawnTime = numOr(document.getElementById('place-time').value, 0, true);
+  const hitWindow = numOr(document.getElementById('place-window').value, 200, true);
+
+  if (placingType === 'slider') {
+    if (pendingSlider === null) {
+      // First click: store start position
+      pendingSlider = { x: parseFloat(nx.toFixed(3)), y: parseFloat(ny.toFixed(3)), spawnTime, hitWindow };
+      sliderPath = [{ x: parseFloat(nx.toFixed(3)), y: parseFloat(ny.toFixed(3)) }];
+      setHint(`Slider start set at (${nx.toFixed(2)}, ${ny.toFixed(2)}) @ ${spawnTime}t — drag or click to set end position.`);
+      redraw();
+      return;
+    } else {
+      // Second click completes slider for click-to-place flow.
+      finalizeSliderPlacement(nx, ny);
+      return;
+    }
+  }
+  placeNoteAtTick(spawnTime, placingType, hitWindow, nx, ny);
+});
+
+playCanvas.addEventListener('mousemove', e => {
+  const rect = playCanvas.getBoundingClientRect();
+  const scaleX = playCanvas.width  / rect.width;
+  const scaleY = playCanvas.height / rect.height;
+  const cx = (e.clientX - rect.left) * scaleX;
+  const cy = (e.clientY - rect.top)  * scaleY;
+  let hovering = false;
+  for (let i = notes.length - 1; i >= 0; i--) {
+    const n = notes[i];
+    const dx = (n.position.x * playCanvas.width)  - cx;
+    const dy = (n.position.y * playCanvas.height) - cy;
+    if (Math.sqrt(dx*dx + dy*dy) <= NOTE_RADIUS + 4) { hovering = true; break; }
+  }
+  playCanvas.style.cursor = hovering ? 'pointer' : 'crosshair';
+});
+
+tlCanvas.addEventListener('click', e => {
+  const rect = tlCanvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  const frac = x / tlCanvas.width;
+  const maxTime = getTimelineMaxTicks();
+  const t = Math.round(frac * maxTime);
+  const songLanePct = Math.max(20, Math.min(80, numOr(document.getElementById('timeline-song-lane').value, 35, true)));
+  const songLaneH = Math.max(14, Math.round((tlCanvas.height * songLanePct) / 100));
+
+  seekPreviewToTick(t);
+
+  if (y <= songLaneH) {
+    setHint(`Song timeline moved to ${t} ticks`);
+  } else {
+    document.getElementById('place-time').value = t;
+    hideNoteEditor();
+    setHint(`Hit timeline moved to ${t} ticks (placement set)`);
+  }
+  redraw();
+});
+
+function selectNote(i) {
+  selectedIdx = i;
+  const note = notes[i];
+  const panel = document.getElementById('note-edit-panel');
+  panel.style.display = 'flex';
+  document.getElementById('edit-type').value  = note.type;
+  document.getElementById('edit-time').value  = note.spawn_time_ticks;
+  document.getElementById('edit-window').value = note.hit_window_ticks;
+
+  const sliderFields = document.getElementById('slider-edit-fields');
+  if (note.type === 'slider') {
+    sliderFields.style.display = 'flex';
+    document.getElementById('edit-slider-end-x').value = note.slider_end?.x ?? 0.5;
+    document.getElementById('edit-slider-end-y').value = note.slider_end?.y ?? 0.5;
+    document.getElementById('edit-slider-duration').value = note.slider_duration_ticks ?? 20;
+  } else {
+    sliderFields.style.display = 'none';
+  }
+
+  // Listen for type change to toggle slider fields
+  document.getElementById('edit-type').onchange = function() {
+    sliderFields.style.display = this.value === 'slider' ? 'flex' : 'none';
+  };
+
+  // Highlight in list
+  document.querySelectorAll('.note-item').forEach((el, idx) => {
+    el.classList.toggle('selected', idx === i);
+  });
+  redraw();
+}
+
+function applyNoteEdit() {
+  if (selectedIdx < 0 || selectedIdx >= notes.length) return;
+  notes[selectedIdx].type         = document.getElementById('edit-type').value;
+  notes[selectedIdx].spawn_time_ticks = numOr(document.getElementById('edit-time').value, 0, true);
+  notes[selectedIdx].hit_window_ticks = numOr(document.getElementById('edit-window').value, 4, true);
+  if (notes[selectedIdx].type === 'slider') {
+    notes[selectedIdx].slider_end = {
+      x: numOr(document.getElementById('edit-slider-end-x').value, 0.5),
+      y: numOr(document.getElementById('edit-slider-end-y').value, 0.5)
+    };
+    notes[selectedIdx].slider_duration_ticks = numOr(document.getElementById('edit-slider-duration').value, 20, true);
+  } else {
+    delete notes[selectedIdx].slider_end;
+    delete notes[selectedIdx].slider_duration_ticks;
+  }
+  sortNotes();
+  refreshAll();
+}
+
+function deleteSelectedNote() {
+  if (selectedIdx < 0 || selectedIdx >= notes.length) return;
+  notes.splice(selectedIdx, 1);
+  reindexNotes();
+  selectedIdx = -1;
+  document.getElementById('note-edit-panel').style.display = 'none';
+  refreshAll();
+}
+
+function reindexNotes() {
+  // IDs are stable and internal. Do not renumber notes when order changes.
+}
+
+function hideNoteEditor() {
+  selectedIdx = -1;
+  const panel = document.getElementById('note-edit-panel');
+  if (panel) panel.style.display = 'none';
+}
+
+function createNote(type, spawnTimeTicks, hitWindowTicks, x, y, sliderEnd = null, sliderDurationTicks = 0, sliderPathPoints = []) {
+  const sequence = nextNoteSequence++;
+  const note = {
+    id: `note_${sequence}`,
+    sequence,
+    type,
+    spawn_time_ticks: spawnTimeTicks,
+    hit_window_ticks: hitWindowTicks,
+    position: {
+      x: parseFloat(x.toFixed(3)),
+      y: parseFloat(y.toFixed(3))
+    }
+  };
+  if (type === 'slider') {
+    note.slider_end = {
+      x: parseFloat((sliderEnd?.x ?? x).toFixed(3)),
+      y: parseFloat((sliderEnd?.y ?? y).toFixed(3))
+    };
+    note.slider_duration_ticks = sliderDurationTicks;
+    if (sliderPathPoints.length > 0) {
+      note.slider_path_points = [...sliderPathPoints];
+    }
+  }
+  return note;
+}
+
+function sortNotes() {
+  notes.sort((a, b) => {
+    const delta = a.spawn_time_ticks - b.spawn_time_ticks;
+    return delta !== 0 ? delta : (a.sequence - b.sequence);
+  });
+}
+
+function setPlaceTime(ticks) {
+  const value = Math.max(0, Math.round(ticks));
+  document.getElementById('place-time').value = value;
+  redraw();
+}
+
+function stepPlaceTime(delta) {
+  const current = numOr(document.getElementById('place-time').value, 0, true);
+  setPlaceTime(current + delta);
+}
+
+function placeNoteAtTick(spawnTimeTicks, type, hitWindowTicks, x, y, options = {}) {
+  const note = createNote(
+    type,
+    spawnTimeTicks,
+    hitWindowTicks,
+    x,
+    y,
+    options.sliderEnd,
+    options.sliderDurationTicks,
+    options.sliderPathPoints
+  );
+  notes.push(note);
+  sortNotes();
+  hideNoteEditor();
+
+  const autoAdvanceEnabled = document.getElementById('auto-advance-enabled').checked;
+  const advance = autoAdvanceEnabled ? numOr(document.getElementById('auto-advance').value, 0, true) : 0;
+  if (advance > 0) {
+    if (type === 'slider') {
+      document.getElementById('place-time').value = spawnTimeTicks + (options.sliderDurationTicks || 0) + advance;
+    } else {
+      document.getElementById('place-time').value = spawnTimeTicks + advance;
+    }
+  }
+  refreshAll();
+  setHint(`Placed ${type} note at (${x.toFixed(2)}, ${y.toFixed(2)}) @ ${spawnTimeTicks} ticks`);
+  return note;
+}
+
+function validateForgemapSchema(fm) {
+  const errors = [];
+
+  // These checks mirror ForgemapSchemaValidator and ForgemapReloadListener in the mod,
+  // so a map that passes here loads in game. The game also checks the school against the
+  // schools that are actually installed, which this page cannot see.
+
+  // Tier: hammers reach mastery tiers 0 to 4 only.
+  const tier = Number(fm.tier);
+  if (!Number.isInteger(tier) || tier < 0 || tier > 4) {
+    errors.push(`tier must be a whole number from 0 to 4, got ${fm.tier}`);
+  }
+
+  // School: "none" for baseline maps, otherwise a full school id.
+  const school = typeof fm.school === 'string' ? fm.school.trim() : '';
+  if (!school) {
+    errors.push('school must be none or a school id such as irons_spellbooks:fire');
+  } else if (school !== 'none' && !/^[a-z0-9_.-]+:[a-z0-9_./-]+$/.test(school)) {
+    errors.push(`school must be none or a full school id such as irons_spellbooks:${school.toLowerCase()}, got '${fm.school}'`);
+  }
+
+  const weight = Number(fm.weight ?? 1);
+  if (!Number.isInteger(weight) || weight < 1 || weight > 1000) {
+    errors.push(`weight must be a whole number from 1 to 1000, got ${fm.weight}`);
+  }
+  if (typeof fm.name !== 'string' || !fm.name.trim()) {
+    errors.push('name must not be blank');
+  }
+
+  const list = Array.isArray(fm.notes) ? fm.notes : [];
+  const primaryCount = list.filter(n => n.type === 'primary').length;
+  const sliderCount  = list.filter(n => n.type === 'slider').length;
+  const expectedHits = primaryCount + sliderCount * 2;
+
+  // Rule 4: total_hits equals primary + 2*slider
+  if (fm.total_hits !== expectedHits) {
+    errors.push(`total_hits (${fm.total_hits}) must equal primary notes + 2×slider notes = ${expectedHits}`);
+  }
+
+  const approachTicks = Number(fm.approach_ticks);
+  if (!Number.isFinite(approachTicks) || approachTicks <= 0) {
+    errors.push(`approach_ticks must be positive, got ${fm.approach_ticks}`);
+  }
+
+  const musicTrack = fm.music_track || '';
+  if (musicTrack && !/^[a-z0-9_.-]+:[a-z0-9_./-]+$/.test(musicTrack)) {
+    errors.push(`music_track must be blank or a sound asset path like iss_runeforged:minigame/tetsu_uchi_uta, got '${musicTrack}'`);
+  }
+
+  const musicOffsetTicks = Number(fm.music_offset_ticks ?? 0);
+  if (!Number.isFinite(musicOffsetTicks) || musicOffsetTicks < 0) {
+    errors.push(`music_offset_ticks must be >= 0, got ${fm.music_offset_ticks}`);
+  }
+
+  // Rule 5: notes non-empty and at least one primary or slider
+  if (!list.length) {
+    errors.push('notes array must not be empty');
+  } else if (primaryCount + sliderCount === 0) {
+    errors.push('at least one primary or slider note is required');
+  }
+
+  // Rules 6-8: non-decreasing spawn time, positive hit window, normalized positions
+  let lastSpawnTime = -1;
+  const seenIds = new Set();
+  list.forEach((note, i) => {
+    if (typeof note.id !== 'string' || !note.id.trim()) {
+      errors.push(`notes[${i}].id must not be blank`);
+    } else if (seenIds.has(note.id)) {
+      errors.push(`notes[${i}].id '${note.id}' is used by an earlier note; note ids must be unique`);
+    } else {
+      seenIds.add(note.id);
+    }
+    if (note.type !== 'slider' && (note.slider_end || note.slider_path_points || Number(note.slider_duration_ticks || 0) !== 0)) {
+      errors.push(`notes[${i}] has slider fields but type is '${note.type}'`);
+    }
+    const spawn = Number(note.spawn_time_ticks);
+    const hitWindow = Number(note.hit_window_ticks);
+    const x = Number(note.position?.x);
+    const y = Number(note.position?.y);
+
+    if (!['primary', 'support', 'slider'].includes(note.type)) {
+      errors.push(`notes[${i}].type must be primary, support, or slider, got '${note.type}'`);
+    }
+
+    if (!Number.isInteger(spawn) || spawn < 0) {
+      errors.push(`notes[${i}].spawn_time_ticks must be a whole number >= 0, got ${note.spawn_time_ticks}`);
+    }
+    if (!Number.isFinite(spawn) || spawn < lastSpawnTime) {
+      errors.push(`notes[${i}].spawn_time_ticks (${note.spawn_time_ticks}) must be greater than or equal to previous note (${lastSpawnTime})`);
+    }
+    if (Number.isFinite(spawn)) lastSpawnTime = spawn;
+
+    if (!Number.isFinite(hitWindow) || hitWindow <= 0) {
+      errors.push(`notes[${i}].hit_window_ticks must be positive, got ${note.hit_window_ticks}`);
+    }
+
+    if (!Number.isFinite(x) || x < 0 || x > 1) {
+      errors.push(`notes[${i}].position.x must be in range [0.0, 1.0], got ${note.position?.x}`);
+    }
+    if (!Number.isFinite(y) || y < 0 || y > 1) {
+      errors.push(`notes[${i}].position.y must be in range [0.0, 1.0], got ${note.position?.y}`);
+    }
+
+    // Slider-specific validation
+    if (note.type === 'slider') {
+      if (!note.slider_end || typeof note.slider_end.x !== 'number' || typeof note.slider_end.y !== 'number') {
+        errors.push(`notes[${i}] is a slider but missing valid 'slider_end' {x, y}`);
+      } else {
+        if (note.slider_end.x < 0 || note.slider_end.x > 1) errors.push(`notes[${i}].slider_end.x out of range [0, 1]`);
+        if (note.slider_end.y < 0 || note.slider_end.y > 1) errors.push(`notes[${i}].slider_end.y out of range [0, 1]`);
+      }
+      const points = Array.isArray(note.slider_path_points) ? note.slider_path_points : [];
+      if (points.length > 256) errors.push(`notes[${i}].slider_path_points must have at most 256 points`);
+      if (points.some(p => !(p.x >= 0 && p.x <= 1 && p.y >= 0 && p.y <= 1))) {
+        errors.push(`notes[${i}].slider_path_points must have x and y in range [0, 1]`);
+      }
+      const dur = Number(note.slider_duration_ticks);
+      if (!Number.isFinite(dur) || dur <= 0) {
+        errors.push(`notes[${i}].slider_duration_ticks must be > 0, got ${note.slider_duration_ticks}`);
+      }
+    }
+  });
+
+  // Rule 9: scoring fields must be numeric
+  const perfect = Number(fm.scoring_config?.perfect);
+  const good = Number(fm.scoring_config?.good);
+  const miss = Number(fm.scoring_config?.miss);
+  const supportHit = Number(fm.scoring_config?.support_hit);
+  const supportMiss = Number(fm.scoring_config?.support_miss);
+
+  if (!Number.isFinite(perfect)) {
+    errors.push(`scoring_config.perfect must be a number, got ${fm.scoring_config?.perfect}`);
+  }
+  if (!Number.isFinite(good)) {
+    errors.push(`scoring_config.good must be a number, got ${fm.scoring_config?.good}`);
+  }
+  if (!Number.isFinite(miss)) {
+    errors.push(`scoring_config.miss must be a number, got ${fm.scoring_config?.miss}`);
+  }
+  if (!Number.isFinite(supportHit)) {
+    errors.push(`scoring_config.support_hit must be a number, got ${fm.scoring_config?.support_hit}`);
+  }
+  if (!Number.isFinite(supportMiss)) {
+    errors.push(`scoring_config.support_miss must be a number, got ${fm.scoring_config?.support_miss}`);
+  }
+
+  const speed = fm.scoring_config?.speed || {};
+  const scale = fm.scoring_config?.scale || {};
+  const accuracy = fm.scoring_config?.accuracy || {};
+  const thresholds = fm.scoring_config?.quality_thresholds || {};
+  const weights = [Number(speed.weight), Number(scale.weight), Number(accuracy.weight)];
+  if (!weights.every(Number.isFinite) || Math.abs(weights.reduce((a, b) => a + b, 0) - 1) > 0.001) {
+    errors.push('scoring_config speed/scale/accuracy weights must sum to 1.0');
+  }
+  const inRange = (value, min, max, integer = false) => {
+    const n = Number(value);
+    return Number.isFinite(n) && n >= min && n <= max && (!integer || Number.isInteger(n));
+  };
+  if (!inRange(speed.approach_multiplier, 0.1, 4.0)) errors.push('scoring_config.speed.approach_multiplier must be from 0.1 to 4.0');
+  if (!inRange(speed.response_window_ticks, 1, 100, true)) errors.push('scoring_config.speed.response_window_ticks must be a whole number from 1 to 100');
+  if (!inRange(scale.action_radius_multiplier, 0.25, 2.0)) errors.push('scoring_config.scale.action_radius_multiplier must be from 0.25 to 2.0');
+  if (!inRange(scale.support_radius_multiplier, 0.25, 2.0)) errors.push('scoring_config.scale.support_radius_multiplier must be from 0.25 to 2.0');
+  if (!inRange(accuracy.perfect_window_ticks, 1, 100, true)) errors.push('scoring_config.accuracy.perfect_window_ticks must be a whole number from 1 to 100');
+  if (!inRange(accuracy.good_window_ticks, 1, 100, true)) errors.push('scoring_config.accuracy.good_window_ticks must be a whole number from 1 to 100');
+  if (Number(accuracy.perfect_window_ticks) > Number(accuracy.good_window_ticks)) {
+    errors.push('scoring_config.accuracy.perfect_window_ticks must be <= good_window_ticks');
+  }
+  [['speed', speed], ['scale', scale], ['accuracy', accuracy]].forEach(([key, part]) => {
+    if (!inRange(part.weight, 0, 1)) errors.push(`scoring_config.${key}.weight must be from 0 to 1`);
+  });
+  ['perfect', 'good', 'miss', 'support_hit'].forEach(key => {
+    if (!Number.isInteger(Number(fm.scoring_config?.[key]))) errors.push(`scoring_config.${key} must be a whole number`);
+  });
+  ['uncommon', 'rare', 'epic', 'legendary', 'myth'].forEach(key => {
+    if (!inRange(thresholds[key], 0, 100, true)) errors.push(`scoring_config.quality_thresholds.${key} must be a whole number from 0 to 100`);
+  });
+  const thresholdValues = ['uncommon', 'rare', 'epic', 'legendary', 'myth'].map(k => Number(thresholds[k]));
+  if (!thresholdValues.every(Number.isFinite) || thresholdValues.some((v, i) => i > 0 && v < thresholdValues[i - 1])) {
+    errors.push('scoring_config.quality_thresholds must be ascending');
+  }
+
+  return errors;
+}
+
+function renderSchemaValidation() {
+  const statusEl = document.getElementById('schema-status');
+  const errorsEl = document.getElementById('schema-errors');
+  const errors = validateForgemapSchema(buildForgemap());
+
+  if (!errors.length) {
+    statusEl.textContent = 'Schema: PASS';
+    statusEl.classList.add('ok');
+    statusEl.classList.remove('bad');
+    errorsEl.innerHTML = '';
+  } else {
+    statusEl.textContent = `Schema: FAIL (${errors.length} issue${errors.length > 1 ? 's' : ''})`;
+    statusEl.classList.add('bad');
+    statusEl.classList.remove('ok');
+    errorsEl.innerHTML = errors.map(e => `<li>${e}</li>`).join('');
+  }
+  return errors;
+}
+
+function runSchemaCheck() {
+  const errors = renderSchemaValidation();
+  if (!errors.length) {
+    setHint('Schema check passed.');
+  } else {
+    setHint(`Schema check failed: ${errors.length} issue${errors.length > 1 ? 's' : ''}.`);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// UI helpers
+// ─────────────────────────────────────────────────────────────────────────────
+function setNoteType(type) {
+  placingType = type;
+  pendingSlider = null; // cancel any in-progress slider placement on type switch
+  sliderPath = [];
+  sliderDrawing = false;
+  document.getElementById('btn-primary').classList.toggle('active', type === 'primary');
+  document.getElementById('btn-support').classList.toggle('active', type === 'support');
+  document.getElementById('btn-slider').classList.toggle('active', type === 'slider');
+  setHint(type === 'slider' ? 'Click start position, then drag or click to set end position. Dragging creates smooth curves!' : 'Click the play area to place notes');
+  redraw();
+}
+
+function setViewMode(mode) {
+  if (mode !== 'window') previewStop();
+  viewMode = mode;
+  document.getElementById('btn-view-all').classList.toggle('active', mode === 'all');
+  document.getElementById('btn-view-window').classList.toggle('active', mode === 'window');
+  document.getElementById('scrubber-wrap').style.display = 'flex';
+  redraw();
+}
+
+function triggerMusicImport() {
+  document.getElementById('music-file-input').click();
+}
+
+function handleMusicFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  if (previewAudioUrl) {
+    URL.revokeObjectURL(previewAudioUrl);
+    previewAudioUrl = null;
+  }
+
+  previewAudioFile = file;
+  previewAudioUrl = URL.createObjectURL(file);
+  previewAudio = new Audio(previewAudioUrl);
+  previewAudio.preload = 'auto';
+  previewAudio.onended = () => {
+    previewPlaying = false;
+    const btn = document.getElementById('btn-preview-play');
+    if (btn) btn.textContent = '▶ Play';
+  };
+
+  document.getElementById('music-track-label').textContent = file.name;
+  setHint(/\.ogg$/i.test(file.name)
+    ? 'Audio loaded. Use Export pack (.zip) to get a resource pack that plays it in game.'
+    : 'Audio loaded for preview. Minecraft only plays .ogg (Vorbis), so convert it before exporting a pack.');
+  event.target.value = '';
+}
+
+function getMusicOffsetTicks() {
+  return numOr(document.getElementById('meta-music-offset').value, 0, true);
+}
+
+function normalizeMusicTrack(rawValue) {
+  const raw = String(rawValue || '').trim();
+  if (!raw) return '';
+  if (/^[a-z0-9_.-]+:[a-z0-9_./-]+$/i.test(raw)) {
+    return raw.replace(/\.ogg$/i, '');
+  }
+  const cleaned = raw
+    .replace(/\\/g, '/')
+    .replace(/^assets\//i, '')
+    .replace(/^sounds\//i, '')
+    .replace(/\.ogg$/i, '');
+  return `iss_runeforged:${cleaned}`;
+}
+
+function syncAudioToPreviewTime() {
+  if (!previewAudio) return;
+  const offsetTicks = getMusicOffsetTicks();
+  const audioTimeSec = Math.max(0, (previewTime + offsetTicks) / 20);
+  previewAudio.currentTime = audioTimeSec;
+}
+
+function getTimelineMaxTicks() {
+  const noteMax = notes.length
+    ? Math.max(...notes.map(n => n.spawn_time_ticks + (n.type === 'slider' ? (Number(n.slider_duration_ticks) || 0) : 0))) + 40
+    : 0;
+  const audioMax = (previewAudio && Number.isFinite(previewAudio.duration) && previewAudio.duration > 0)
+    ? Math.max(0, Math.round(previewAudio.duration * 20) - getMusicOffsetTicks())
+    : 0;
+  return Math.max(1, noteMax, audioMax);
+}
+
+function setCurrentTick(tick) {
+  const maxTime = getTimelineMaxTicks();
+  previewTime = Math.max(0, Math.min(maxTime, Math.round(tick)));
+  const placeInput = document.getElementById('place-time');
+  if (placeInput) placeInput.value = previewTime;
+  document.getElementById('preview-time-label').textContent = Math.round(previewTime) + ' ticks';
+  syncAudioToPreviewTime();
+  redraw();
+}
+
+function seekPreviewToTick(tick) {
+  setCurrentTick(tick);
+}
+
+function previewPlayPause() {
+  if (previewPlaying) {
+    previewPlaying = false;
+    cancelAnimationFrame(previewRAF);
+    if (previewAudio) previewAudio.pause();
+    document.getElementById('btn-preview-play').textContent = '▶ Play';
+  } else {
+    const maxTime = getTimelineMaxTicks();
+    if (!maxTime) return;
+    if (previewTime >= maxTime) previewTime = 0;
+    syncAudioToPreviewTime();
+    if (previewAudio) previewAudio.play().catch(() => {});
+    previewPlaying = true;
+    previewLastTs  = performance.now();
+    document.getElementById('btn-preview-play').textContent = '⏸ Pause';
+    previewRAF = requestAnimationFrame(previewLoop);
+  }
+}
+
+function previewStop() {
+  previewPlaying = false;
+  cancelAnimationFrame(previewRAF);
+  if (previewAudio) {
+    previewAudio.pause();
+    previewAudio.currentTime = 0;
+  }
+  previewTime = 0;
+  const btn = document.getElementById('btn-preview-play');
+  if (btn) btn.textContent = '▶ Play';
+  const lbl = document.getElementById('preview-time-label');
+  if (lbl) lbl.textContent = '0 ticks';
+  if (viewMode === 'window') redraw();
+}
+
+function previewLoop(ts) {
+  if (!previewPlaying) return;
+  const dt = ts - previewLastTs;
+  previewLastTs = ts;
+
+  if (previewAudio && !previewAudio.paused) {
+    const offsetTicks = getMusicOffsetTicks();
+    previewTime = Math.max(0, previewAudio.currentTime * 20 - offsetTicks);
+  } else {
+    previewTime += dt / 50;
+  }
+
+  const maxTime = getTimelineMaxTicks();
+  if (previewTime >= maxTime) {
+    previewTime = maxTime;
+    previewPlaying = false;
+    document.getElementById('btn-preview-play').textContent = '▶ Play';
+  }
+  const roundedTime = Math.round(previewTime);
+  document.getElementById('preview-time-label').textContent = roundedTime + ' ticks';
+  const placeInput = document.getElementById('place-time');
+  if (placeInput) placeInput.value = roundedTime;
+  redraw();
+  if (previewPlaying) previewRAF = requestAnimationFrame(previewLoop);
+}
+
+function setHint(msg) {
+  document.getElementById('st-hint').textContent = msg;
+}
+
+function refreshAll() {
+  // Note list
+  const list = document.getElementById('note-list');
+  const primaries = notes.filter(n => n.type === 'primary');
+  list.innerHTML = notes.map((n, i) => {
+    const num = n.type === 'primary' ? primaries.indexOf(n) + 1 : '';
+    const label = n.type === 'primary' ? `#${num} ${n.spawn_time_ticks}t`
+                : n.type === 'slider'  ? `SL ${n.spawn_time_ticks}t\u2192${(n.spawn_time_ticks + (n.slider_duration_ticks||0))}t`
+                : `S ${n.spawn_time_ticks}t`;
+    return `<div class="note-item${i === selectedIdx ? ' selected' : ''}" onclick="selectNote(${i})">
+      <div class="note-dot ${n.type}"></div>
+      <span class="note-label">${label}</span>
+      <span class="note-del" onclick="event.stopPropagation();notes.splice(${i},1);reindexNotes();if(selectedIdx===${i}){selectedIdx=-1;document.getElementById('note-edit-panel').style.display='none';}refreshAll()">×</span>
+    </div>`;
+  }).join('');
+
+  // Count
+  const primaryCount  = notes.filter(n => n.type === 'primary').length;
+  const sliderCount   = notes.filter(n => n.type === 'slider').length;
+  const supportCount  = notes.filter(n => n.type === 'support').length;
+  const maxTime = notes.length ? Math.max(...notes.map(n => n.spawn_time_ticks + (n.type === 'slider' ? (Number(n.slider_duration_ticks) || 0) : 0))) : 0;
+  document.getElementById('note-count').textContent  = notes.length;
+  document.getElementById('st-total').textContent    = notes.length;
+  document.getElementById('st-primary').textContent  = primaryCount;
+  document.getElementById('st-slider').textContent   = sliderCount;
+  document.getElementById('st-support').textContent  = supportCount;
+  document.getElementById('st-duration').textContent = maxTime;
+
+  renderSchemaValidation();
+
+  redraw();
+}
+
+// Reads a number from a form field. Unlike `parseInt(v) || fallback`, a typed 0 stays 0;
+// only an empty or non-numeric field uses the fallback.
+function numOr(value, fallback, integer = false) {
+  const n = integer ? parseInt(value, 10) : parseFloat(value);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Build forgemap object
+// ─────────────────────────────────────────────────────────────────────────────
+function buildForgemap() {
+  const primaryCount = notes.filter(n => n.type === 'primary').length;
+  const sliderCount  = notes.filter(n => n.type === 'slider').length;
+  const totalHits    = primaryCount + sliderCount * 2;
+  return {
+    tier: numOr(document.getElementById('meta-tier').value, 1, true),
+    school: document.getElementById('meta-school').value,
+    name: document.getElementById('meta-name').value || 'forgemap',
+    total_hits: totalHits,
+    notes: notes.map(n => ({
+      id: n.id, type: n.type,
+      spawn_time_ticks: n.spawn_time_ticks,
+      hit_window_ticks: n.hit_window_ticks,
+      position: n.position,
+      ...(n.type === 'slider' && n.slider_end ? { slider_end: n.slider_end } : {}),
+      ...(n.type === 'slider' && n.slider_duration_ticks ? { slider_duration_ticks: n.slider_duration_ticks } : {}),
+      ...(n.type === 'slider' && n.slider_path_points && n.slider_path_points.length > 0 ? { slider_path_points: n.slider_path_points } : {})
+    })),
+    approach_ticks: numOr(document.getElementById('meta-approach').value, 20, true),
+    music_track: normalizeMusicTrack(document.getElementById('meta-music-track').value || ''),
+    music_offset_ticks: numOr(document.getElementById('meta-music-offset').value, 0, true),
+    weight: numOr(document.getElementById('meta-weight').value, 1, true),
+    scoring_config: {
+      perfect: numOr(document.getElementById('sc-perfect').value, 100, true),
+      good: numOr(document.getElementById('sc-good').value, 50, true),
+      miss: numOr(document.getElementById('sc-miss').value, -5, true),
+      support_hit: numOr(document.getElementById('sc-support-hit').value, 25, true),
+      support_miss: numOr(document.getElementById('sc-support-miss').value, -0.5),
+      speed: {
+        approach_multiplier: numOr(document.getElementById('sc-speed-approach').value, 1.0),
+        response_window_ticks: numOr(document.getElementById('sc-speed-response').value, 10, true),
+        weight: numOr(document.getElementById('sc-weight-speed').value, 0.3)
+      },
+      scale: {
+        action_radius_multiplier: numOr(document.getElementById('sc-scale-action').value, 1.0),
+        support_radius_multiplier: numOr(document.getElementById('sc-scale-support').value, 1.0),
+        weight: numOr(document.getElementById('sc-weight-scale').value, 0.2)
+      },
+      accuracy: {
+        perfect_window_ticks: numOr(document.getElementById('sc-accuracy-perfect').value, 2, true),
+        good_window_ticks: numOr(document.getElementById('sc-accuracy-good').value, 4, true),
+        weight: numOr(document.getElementById('sc-weight-accuracy').value, 0.5)
+      },
+      quality_thresholds: {
+        uncommon: numOr(document.getElementById('sc-threshold-uncommon').value, 50, true),
+        rare: numOr(document.getElementById('sc-threshold-rare').value, 70, true),
+        epic: numOr(document.getElementById('sc-threshold-epic').value, 85, true),
+        legendary: numOr(document.getElementById('sc-threshold-legendary').value, 95, true),
+        myth: numOr(document.getElementById('sc-threshold-myth').value, 98, true)
+      }
+    }
+  };
+}
+
+function loadForgemap(fm) {
+  document.getElementById('meta-name').value     = fm.name || '';
+  document.getElementById('meta-tier').value     = fm.tier ?? 1;
+  document.getElementById('meta-school').value   = fm.school || 'none';
+  document.getElementById('meta-weight').value   = fm.weight ?? 1;
+  document.getElementById('meta-approach').value = fm.approach_ticks ?? 20;
+  document.getElementById('meta-music-track').value = normalizeMusicTrack(fm.music_track ?? '');
+  document.getElementById('meta-music-offset').value = fm.music_offset_ticks ?? 0;
+  document.getElementById('sc-perfect').value    = fm.scoring_config?.perfect ?? 100;
+  document.getElementById('sc-good').value       = fm.scoring_config?.good ?? 50;
+  document.getElementById('sc-miss').value       = fm.scoring_config?.miss ?? -5;
+  document.getElementById('sc-support-hit').value = fm.scoring_config?.support_hit ?? 25;
+  document.getElementById('sc-support-miss').value = fm.scoring_config?.support_miss ?? -0.5;
+  document.getElementById('sc-speed-approach').value = fm.scoring_config?.speed?.approach_multiplier ?? 1.0;
+  document.getElementById('sc-speed-response').value = fm.scoring_config?.speed?.response_window_ticks ?? 10;
+  document.getElementById('sc-scale-action').value = fm.scoring_config?.scale?.action_radius_multiplier ?? 1.0;
+  document.getElementById('sc-scale-support').value = fm.scoring_config?.scale?.support_radius_multiplier ?? 1.0;
+  document.getElementById('sc-accuracy-perfect').value = fm.scoring_config?.accuracy?.perfect_window_ticks ?? 2;
+  document.getElementById('sc-accuracy-good').value = fm.scoring_config?.accuracy?.good_window_ticks ?? 4;
+  document.getElementById('sc-weight-speed').value = fm.scoring_config?.speed?.weight ?? 0.3;
+  document.getElementById('sc-weight-scale').value = fm.scoring_config?.scale?.weight ?? 0.2;
+  document.getElementById('sc-weight-accuracy').value = fm.scoring_config?.accuracy?.weight ?? 0.5;
+  document.getElementById('sc-threshold-uncommon').value = fm.scoring_config?.quality_thresholds?.uncommon ?? 50;
+  document.getElementById('sc-threshold-rare').value = fm.scoring_config?.quality_thresholds?.rare ?? 70;
+  document.getElementById('sc-threshold-epic').value = fm.scoring_config?.quality_thresholds?.epic ?? 85;
+  document.getElementById('sc-threshold-legendary').value = fm.scoring_config?.quality_thresholds?.legendary ?? 95;
+  document.getElementById('sc-threshold-myth').value = fm.scoring_config?.quality_thresholds?.myth ?? 98;
+
+  nextNoteSequence = 0;
+  notes = (fm.notes || []).map(n => {
+    const seq = nextNoteSequence++;
+    return { ...n, sequence: seq, id: n.id || `note_${seq}` };
+  });
+  sortNotes();
+  selectedIdx = -1;
+  document.getElementById('note-edit-panel').style.display = 'none';
+  refreshAll();
+  setHint(`Loaded "${fm.name}" — ${notes.length} notes`);
+  if (notes.length > 8) setViewMode('window');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Export / Import
+// ─────────────────────────────────────────────────────────────────────────────
+function exportJSON() {
+  const errors = renderSchemaValidation();
+  if (errors.length && !confirm(`Schema validation found ${errors.length} issue(s). Export anyway?`)) {
+    return;
+  }
+  const fm = buildForgemap();
+  document.getElementById('export-text').value = JSON.stringify(fm, null, 2);
+  document.getElementById('export-modal').classList.remove('hidden');
+}
+
+function copyExport() {
+  navigator.clipboard.writeText(document.getElementById('export-text').value)
+    .then(() => setHint('Copied to clipboard!'));
+}
+
+function downloadExport() {
+  const errors = renderSchemaValidation();
+  if (errors.length && !confirm(`Schema validation found ${errors.length} issue(s). Download anyway?`)) {
+    return;
+  }
+  const fm = buildForgemap();
+  const name = (fm.name || 'forgemap').replace(/\s+/g, '_');
+  const blob = new Blob([JSON.stringify(fm, null, 2)], { type: 'application/json' });
+  const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: `${name}.json` });
+  a.click(); URL.revokeObjectURL(a.href);
+  setHint(`Downloaded ${name}.json`);
+}
+
+// ── Pack export ─────────────────────────────────────────────────────────────
+// A forgemap is server data, so it ships in a datapack. Music is a client asset, so it
+// ships in a resource pack that defines the sound event named by music_track.
+const DATAPACK_FORMAT = 48;     // Minecraft 1.21.1
+const RESOURCEPACK_FORMAT = 34; // Minecraft 1.21.1
+
+function slugify(value) {
+  return String(value || '').trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_.\/-]/g, '');
+}
+
+function packHasMusic() {
+  return !!previewAudioFile && /\.ogg$/i.test(previewAudioFile.name);
+}
+
+function openPackExport() {
+  const fm = buildForgemap();
+  const fileInput = document.getElementById('pack-file');
+  if (!fileInput.value) fileInput.value = slugify(fm.name) || 'my_map';
+  const note = document.getElementById('pack-music-note');
+  if (packHasMusic()) {
+    note.textContent = `Music: ${previewAudioFile.name} goes into a resource pack, and music_track is set to match.`;
+  } else if (previewAudioFile) {
+    note.textContent = `Music: ${previewAudioFile.name} is not an .ogg file, so no resource pack is made. Convert it to Ogg Vorbis and load it again to include it.`;
+  } else if (fm.music_track) {
+    note.textContent = `Music: no audio loaded. music_track stays ${fm.music_track}, so that sound must already exist in game.`;
+  } else {
+    note.textContent = 'Music: none. Load an .ogg with Load Audio to include a song.';
+  }
+  document.getElementById('pack-errors').innerHTML = '';
+  document.getElementById('pack-modal').classList.remove('hidden');
+}
+
+async function downloadPack() {
+  const namespace = document.getElementById('pack-namespace').value.trim();
+  const file = slugify(document.getElementById('pack-file').value);
+  const fm = buildForgemap();
+  const problems = [];
+  if (!/^[a-z0-9_.-]+$/.test(namespace)) problems.push('Namespace may only use lowercase letters, digits, _ - and .');
+  if (!file || !/^[a-z0-9_.-]+(\/[a-z0-9_.-]+)*$/.test(file)) problems.push('Map file name may only use lowercase letters, digits, _ - . and /');
+
+  const music = packHasMusic();
+  const soundPath = `minigame/${file}`;
+  if (music) fm.music_track = `${namespace}:${soundPath}`;
+  validateForgemapSchema(fm).forEach(e => problems.push(e));
+  if (problems.length) {
+    document.getElementById('pack-errors').innerHTML = problems.map(e => `<li>${e}</li>`).join('');
+    return;
+  }
+
+  const JSZip = await getJSZip();
+  const zip = new JSZip();
+  const packName = `${namespace}_${file.replace(/\//g, '_')}`;
+  const description = `Runeforge forgemap ${fm.name}`;
+  zip.file(`${packName}_data/pack.mcmeta`, JSON.stringify({ pack: { pack_format: DATAPACK_FORMAT, description } }, null, 2));
+  zip.file(`${packName}_data/data/${namespace}/forgemaps/${file}.json`, JSON.stringify(fm, null, 2));
+  let readme = `Runeforge forgemap pack for "${fm.name}"\n\n`
+    + `${packName}_data is a datapack. Put the folder in your world's datapacks folder `
+    + `(saves/<world>/datapacks), or the server's world/datapacks folder, then run /reload.\n`;
+  if (music) {
+    const sounds = { [soundPath]: { sounds: [{ name: `${namespace}:${soundPath}`, stream: true }] } };
+    zip.file(`${packName}_music/pack.mcmeta`, JSON.stringify({ pack: { pack_format: RESOURCEPACK_FORMAT, description: `${description} music` } }, null, 2));
+    zip.file(`${packName}_music/assets/${namespace}/sounds.json`, JSON.stringify(sounds, null, 2));
+    zip.file(`${packName}_music/assets/${namespace}/sounds/${soundPath}.ogg`, await previewAudioFile.arrayBuffer());
+    readme += `\n${packName}_music is a resource pack with the song. Every player who should hear it `
+      + `puts it in their resourcepacks folder and turns it on (a server can also send it as the server resource pack).\n`;
+  }
+  zip.file(`${packName}_README.txt`, readme);
+
+  const blob = await zip.generateAsync({ type: 'blob' });
+  const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: `${packName}.zip` });
+  a.click(); URL.revokeObjectURL(a.href);
+  if (music) document.getElementById('meta-music-track').value = fm.music_track;
+  closeModal('pack-modal');
+  setHint(`Downloaded ${packName}.zip`);
+}
+
+function loadJSON() {
+  document.getElementById('import-text').value = '';
+  document.getElementById('import-modal').classList.remove('hidden');
+}
+
+function handleJsonFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('import-text').value = e.target.result;
+    document.getElementById('import-modal').classList.remove('hidden');
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+function applyImport() {
+  try {
+    const fm = JSON.parse(document.getElementById('import-text').value);
+    if (!fm.notes || !Array.isArray(fm.notes)) throw new Error('Missing notes array');
+    loadForgemap(fm);
+    closeModal('import-modal');
+  } catch(err) {
+    alert('Invalid JSON: ' + err.message);
+  }
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.add('hidden');
+}
+
+function clearAll() {
+  if (!confirm('Clear all notes?')) return;
+  notes = [];
+  selectedIdx = -1;
+  document.getElementById('note-edit-panel').style.display = 'none';
+  refreshAll();
+  setHint('Cleared.');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// .osz Import (B-5e)
+// Uses JSDelivr-hosted JSZip for ZIP extraction.
+// Parses .osu hitobjects into forgemap notes.
+// ─────────────────────────────────────────────────────────────────────────────
+function triggerOszImport() {
+  document.getElementById('osz-file-input').click();
+}
+
+// Lazily load JSZip from CDN
+let _jszip = null;
+async function getJSZip() {
+  if (_jszip) return _jszip;
+  await new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js';
+    s.onload = res; s.onerror = rej;
+    document.head.appendChild(s);
+  });
+  _jszip = window.JSZip;
+  return _jszip;
+}
+
+async function handleOszFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  setHint('Loading .osz file...');
+  try {
+    const JSZip = await getJSZip();
+    const zip = new JSZip();
+    const data = await file.arrayBuffer();
+    const loaded = await zip.loadAsync(data);
+
+    oszDifficulties = [];
+    const osuFiles = Object.keys(loaded.files).filter(f => f.endsWith('.osu'));
+    if (!osuFiles.length) { alert('No .osu files found in the .osz archive.'); return; }
+
+    for (const osuPath of osuFiles) {
+      const text = await loaded.files[osuPath].async('string');
+      const meta = parseOsuMeta(text);
+      oszDifficulties.push({ path: osuPath, text, meta });
+    }
+
+    const sel = document.getElementById('osz-diff-select');
+    sel.innerHTML = oszDifficulties.map((d, i) =>
+      `<option value="${i}">[${d.meta.version || d.path}] ${d.meta.title || ''} – ${d.meta.artist || ''}</option>`
+    ).join('');
+
+    document.getElementById('osz-modal').classList.remove('hidden');
+    setHint(`Found ${osuFiles.length} difficulty(ies) in .osz`);
+  } catch (err) {
+    alert('Failed to parse .osz: ' + err.message);
+    setHint('Import failed.');
+  }
+  event.target.value = '';
+}
+
+function parseOsuMeta(text) {
+  const meta = {};
+  const lines = text.split('\n');
+  for (const line of lines) {
+    const m = line.match(/^(Title|Artist|Version|BeatmapID):\s*(.+)/);
+    if (m) meta[m[1].toLowerCase()] = m[2].trim();
+  }
+  return meta;
+}
+
+function parseOsuHitObjects(text, scale, maxNotes) {
+  const lines = text.split('\n');
+  let inSection = false;
+  const objects = [];
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (line === '[HitObjects]') { inSection = true; continue; }
+    if (inSection && line.startsWith('[')) break;
+    if (!inSection || !line) continue;
+    const parts = line.split(',');
+    if (parts.length < 3) continue;
+    const x     = parseInt(parts[0]);
+    const y     = parseInt(parts[1]);
+    const timeMs = parseInt(parts[2]);
+    const type  = parseInt(parts[3]);
+    objects.push({ x, y, timeMs, type });
+    if (objects.length >= maxNotes) break;
+  }
+  return objects;
+}
+
+function convertOsz() {
+  const diffIdx  = parseInt(document.getElementById('osz-diff-select').value);
+  const scale    = numOr(document.getElementById('osz-scale').value, 500);
+  const maxNotes = numOr(document.getElementById('osz-max-notes').value, 20, true);
+  const diff     = oszDifficulties[diffIdx];
+  if (!diff) return;
+
+  const hitObjects = parseOsuHitObjects(diff.text, scale, maxNotes);
+
+  if (!hitObjects.length) { alert('No hit objects found in this difficulty.'); return; }
+
+  // Convert osu! coordinates (0–512 x, 0–384 y) to normalized (0–1)
+  const OSU_W = 512, OSU_H = 384;
+  const importedNotes = hitObjects.map((obj, i) => ({
+    id: `note_${i}`,
+    // osu! type bit 1 = normal hit, bit 2 = long note (slider) → map sliders to support
+    type: (obj.type & 2) ? 'support' : 'primary',
+    spawn_time_ticks: Math.round(obj.timeMs / 50),
+    hit_window_ticks: (obj.type & 2) ? 5 : 4,
+    position: {
+      x: parseFloat((obj.x / OSU_W).toFixed(3)),
+      y: parseFloat((obj.y / OSU_H).toFixed(3))
+    }
+  }));
+
+  document.getElementById('meta-name').value = (diff.meta.title || 'imported').replace(/[^a-z0-9_]/gi, '_').toLowerCase();
+
+  nextNoteSequence = 0;
+  notes = importedNotes.map((n, i) => ({ ...n, sequence: nextNoteSequence++, id: n.id || `note_${i}` }));
+  sortNotes();
+  selectedIdx = -1;
+  document.getElementById('note-edit-panel').style.display = 'none';
+
+  closeModal('osz-modal');
+  refreshAll();
+  setHint(`Imported ${notes.length} notes from "${diff.meta.title || diff.path}"`);
+  if (notes.length > 8) setViewMode('window');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Keyboard shortcuts
+// ─────────────────────────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+  if (e.key === 'p' || e.key === 'P') setNoteType('primary');
+  if (e.key === 's' || e.key === 'S') setNoteType('support');
+  if (e.key === 'Delete' || e.key === 'Backspace') deleteSelectedNote();
+  if (e.key === 'Escape') { selectedIdx = -1; document.getElementById('note-edit-panel').style.display = 'none'; redraw(); }
+  const currentTick = Math.round(previewTime);
+  if (e.key === 'ArrowLeft') {
+    e.preventDefault();
+    seekPreviewToTick(currentTick - 1);
+  }
+  if (e.key === 'ArrowRight') {
+    e.preventDefault();
+    seekPreviewToTick(currentTick + 1);
+  }
+  if (e.key === ' ' || e.code === 'Space') {
+    e.preventDefault();
+    previewPlayPause();
+  }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'e') { e.preventDefault(); exportJSON(); }
+});
+
+// Close modals on overlay click
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => { if (e.target === el) el.classList.add('hidden'); });
+});
+
+// Live redraw when placement timing changes
+  ['meta-approach', 'meta-music-offset', 'timeline-song-lane'].forEach(id => {
+    document.getElementById(id).addEventListener('input', redraw);
+  });
+  document.getElementById('place-time').addEventListener('input', () => {
+    const tick = numOr(document.getElementById('place-time').value, 0, true);
+    setCurrentTick(tick);
+  });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Init
+// ─────────────────────────────────────────────────────────────────────────────
+refreshAll();
+setViewMode(viewMode);
+setHint('Click the play area to place notes. P = Primary, S = Support, Del = Delete selected.');
+</script>
+</body>
+</html>

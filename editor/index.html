@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Runeforged Pack Editor</title>
+<style>
+  /* Forge theme: charcoal panels, ember accent. Every colour is a token so both editors share one look. */
+  :root { --bg:#0f1014; --bg2:#15171d; --bg3:#1b1e26; --panel:#15171d; --panel2:#1f222b; --line:#2c303b; --border:#2c303b;
+          --accent:#ff8a3d; --accent2:#ffb27a; --accentbg:#3a2417; --bad:#ff5c5c; --warn:#ffc04d; --ok:#5fd38d; --text:#e6e3dd; --dim:#8b8f99; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--text); font:13px 'Segoe UI', system-ui, sans-serif; height:100vh; display:flex; flex-direction:column; overflow:hidden; }
+  header { display:flex; align-items:center; gap:8px; padding:7px 12px; background:var(--bg2); border-bottom:1px solid var(--line); }
+  header h1 { font-size:14px; font-weight:600; letter-spacing:.5px; display:flex; align-items:center; gap:8px; }
+  header h1 .logo { width:22px; height:22px; border-radius:5px; background:var(--accent); color:#1a0f08; display:grid; place-items:center; font-size:13px; }
+  button { background:var(--panel2); color:var(--text); border:1px solid var(--line); padding:4px 10px; border-radius:5px; cursor:pointer; font:12px 'Segoe UI', sans-serif; }
+  button:hover { border-color:var(--accent); }
+  button.primary { background:var(--accent); border-color:var(--accent); color:#1a0f08; font-weight:600; }
+  button.locked { background:transparent; border-color:var(--bad); color:var(--bad); }
+  main { flex:1; display:flex; min-height:0; }
+  #tree, #problems { background:var(--bg2); overflow:auto; padding:8px; flex:none; }
+  #tree { width:270px; font-family:Consolas, monospace; font-size:12px; }
+  #problems { width:290px; }
+  #center { flex:1; min-width:0; overflow:auto; padding:14px 18px; }
+  #center.fm { padding:0; overflow:hidden; display:flex; flex-direction:column; }
+  .panel-title { font:600 11px 'Segoe UI', sans-serif; text-transform:uppercase; letter-spacing:.8px; color:var(--dim); margin:2px 4px 8px; display:flex; align-items:center; gap:6px; }
+  /* splitters: drag to resize, double-click to fold */
+  .split { flex:none; background:var(--line); position:relative; }
+  .split.v { width:1px; cursor:col-resize; }
+  .split.h { height:1px; cursor:row-resize; }
+  .split::after { content:''; position:absolute; inset:-3px; }
+  .split.v::after { inset:0 -3px; } .split.h::after { inset:-3px 0; }
+  .split:hover, .split.drag { background:var(--accent); }
+  .folded { display:none !important; }
+  .split.isfolded.v { width:8px; background:var(--panel2); } .split.isfolded.h { height:8px; background:var(--panel2); }
+  /* tooltips */
+  #tip { position:fixed; z-index:50; max-width:300px; background:#24272f; color:var(--text); border:1px solid var(--line); border-left:3px solid var(--accent); border-radius:5px; padding:7px 9px; font-size:12px; line-height:1.45; pointer-events:none; display:none; box-shadow:0 6px 20px #0009; }
+  .row2 { display:flex; align-items:center; gap:4px; padding:2px 6px; border-radius:4px; cursor:pointer; white-space:nowrap; user-select:none; }
+  .row { display:flex; align-items:center; gap:4px; padding:2px 6px; border-radius:4px; cursor:pointer; white-space:nowrap; user-select:none; }
+  #tree .row:hover { background:var(--panel2); }
+  #tree .row.sel { background:var(--accentbg); color:var(--accent2); }
+  .row.drop { outline:1px dashed var(--accent); }
+  .row.cut { opacity:.5; }
+  .row .lab { color:var(--dim); font-family:'Segoe UI', sans-serif; font-size:11px; margin-left:4px; }
+  .row .err { color:var(--bad); }
+  .row .tw { width:12px; color:var(--dim); text-align:center; }
+  #ctx { position:fixed; z-index:20; background:var(--panel2); border:1px solid var(--line); border-radius:6px; padding:4px; min-width:170px; display:none; box-shadow:0 6px 20px #0008; }
+  #ctx div { padding:5px 10px; border-radius:4px; cursor:pointer; }
+  #ctx div:hover { background:var(--accentbg); }
+  #ctx div.off { color:var(--dim); pointer-events:none; }
+  #ctx hr { border:0; border-top:1px solid var(--line); margin:4px 0; }
+  #modal { position:fixed; inset:0; background:#000a; z-index:30; display:none; align-items:center; justify-content:center; }
+  #modal .box { background:var(--bg2); border:1px solid var(--line); border-radius:9px; padding:16px 18px; width:min(480px, 92vw); max-height:90vh; overflow:auto; }
+  #modal h2 { font-size:15px; margin-bottom:10px; }
+  #modal .f { margin:9px 0; }
+  #modal .f > label { display:block; color:var(--dim); font-size:12px; margin-bottom:3px; }
+  #modal .f input[type=text], #modal .f select { width:100%; }
+  #modal .note { color:var(--dim); font-size:12px; line-height:1.5; margin-top:6px; }
+  #modal .err { color:var(--bad); font-size:12px; margin-top:6px; min-height:16px; }
+  #modal .btns { display:flex; justify-content:flex-end; gap:8px; margin-top:12px; }
+  .choice { display:flex; gap:6px; flex-wrap:wrap; }
+  .choice label { flex:1; min-width:120px; border:1px solid var(--line); border-radius:6px; padding:8px 10px; cursor:pointer; color:var(--text) !important; font-size:12px !important; }
+  .choice label:has(input:checked) { border-color:var(--accent); background:var(--accentbg); }
+  .choice input { display:none; }
+  .choice small { display:block; color:var(--dim); margin-top:3px; line-height:1.4; }
+  #toast { position:fixed; bottom:16px; left:50%; transform:translateX(-50%); background:var(--panel2); border:1px solid var(--accent); border-radius:6px; padding:8px 14px; z-index:40; display:none; max-width:80vw; }
+  .empty { color:var(--dim); max-width:600px; line-height:1.6; }
+  .empty h2 { color:var(--text); font-size:16px; margin-bottom:8px; }
+  .empty li { margin-left:18px; }
+  fieldset { border:1px solid var(--line); border-radius:6px; padding:8px 10px; margin:6px 0; background:var(--bg2); }
+  legend { color:var(--dim); padding:0 4px; font-size:12px; }
+  .field { margin:4px 0; }
+  .line { display:flex; align-items:center; gap:8px; }
+  .line > label { min-width:150px; color:var(--dim); }
+  input, select, textarea { background:var(--bg); color:var(--text); border:1px solid var(--line); border-radius:4px; padding:4px 6px; font:12px Consolas, monospace; }
+  input:focus, select:focus, textarea:focus { outline:none; border-color:var(--accent); }
+  input[type=text], textarea { flex:1; min-width:0; }
+  textarea { width:100%; min-height:60px; }
+  textarea.big { min-height:60vh; }
+  .x { background:none; border:0; color:var(--dim); padding:0 4px; }
+  .x:hover { color:var(--bad); }
+  .opt { color:var(--accent2); background:none; border:1px dashed var(--line); margin:2px 4px 2px 0; }
+  .item { position:relative; border-left:2px solid var(--line); padding-left:8px; margin:6px 0; }
+  .field.bad > .line input, .field.bad > .line select, .field.bad > input, .field.bad > textarea { border-color:var(--bad); }
+  .field.bad > fieldset { border-color:var(--bad); }
+  .msg { color:var(--bad); font-size:11px; margin:2px 0 0 158px; }
+  .p { padding:6px 8px; border-radius:5px; margin:4px 0; cursor:pointer; border:1px solid; line-height:1.4; }
+  .p.e { border-color:#5a2626; color:#ff9a9a; background:#2a1515; }
+  .p.w { border-color:#5a4520; color:var(--warn); background:#2a2214; }
+  .p b { display:block; font-weight:600; font-size:11px; opacity:.8; word-break:break-all; }
+  .hint { color:var(--dim); font-size:11px; margin-top:8px; line-height:1.5; }
+  .crumb { color:var(--dim); font-family:Consolas, monospace; margin-bottom:10px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  #center.fm .crumb { margin:0; padding:6px 12px; border-bottom:1px solid var(--line); background:var(--bg2); }
+  body.dragging { outline:2px dashed var(--accent); outline-offset:-6px; }
+  .dim { color:var(--dim); } .mono { font-family:Consolas, monospace; }
+  /* forgemap editor */
+  .fm-bar { display:flex; align-items:center; gap:6px; padding:6px 10px; border-bottom:1px solid var(--line); background:var(--bg2); flex-wrap:wrap; }
+  .fm-bar .sep { width:1px; height:18px; background:var(--line); margin:0 2px; }
+  .seg { display:inline-flex; border:1px solid var(--line); border-radius:5px; overflow:hidden; }
+  .seg button { border:0; border-radius:0; border-right:1px solid var(--line); background:transparent; display:flex; align-items:center; gap:5px; }
+  .seg button:last-child { border-right:0; }
+  .seg button.on { background:var(--accentbg); color:var(--accent2); }
+  .dot { width:9px; height:9px; border-radius:50%; display:inline-block; }
+  .fm-main { flex:1; display:flex; min-height:0; }
+  .fm-side { width:260px; flex:none; overflow:auto; background:var(--bg2); padding:6px 8px; }
+  .fm-side details { border-bottom:1px solid var(--line); padding:4px 0 6px; }
+  .fm-side summary { cursor:pointer; font:600 11px 'Segoe UI', sans-serif; text-transform:uppercase; letter-spacing:.7px; color:var(--dim); padding:4px 2px; }
+  .fm-side summary:hover { color:var(--accent2); }
+  .fm-side label.row { display:grid; grid-template-columns:110px 1fr; gap:6px; padding:2px 0; cursor:default; }
+  .fm-side label.row span { color:var(--dim); font-size:12px; overflow:hidden; text-overflow:ellipsis; }
+  .fm-side label.row input, .fm-side label.row select { width:100%; }
+  .fm-board { flex:1; min-width:0; position:relative; }
+  .fm-board canvas { position:absolute; inset:0; outline:none; cursor:crosshair; }
+  .fm-tl { height:90px; flex:none; position:relative; }
+  .fm-tl canvas { position:absolute; inset:0; cursor:pointer; }
+  .fm-status { display:flex; gap:18px; padding:5px 12px; border-top:1px solid var(--line); background:var(--bg2); font-size:12px; }
+  .fm-status b { font-weight:600; }
+</style>
+</head>
+<body>
+<header>
+  <h1><span class="logo">⚒</span>Runeforged pack editor</h1>
+  <span id="packname" class="dim"></span>
+  <span style="flex:1"></span>
+  <button onclick="newPackDialog()" title="Start a new pack: blank folders, or the elemental lineup for every Iron's Spells school.">New pack</button>
+  <button onclick="document.getElementById('importin').click()" title="A datapack zip opens, or merges into this pack. Any other file is added to the selected folder. You can also drop files on the page.">Import</button>
+  <input id="importin" type="file" hidden multiple onchange="importFiles([...this.files]); this.value=''">
+  <button id="export" class="primary" onclick="exportZip()" title="Download the pack as one zip. Locked while there are red problems.">Export zip</button>
+</header>
+<main>
+  <div id="tree"></div>
+  <div class="split v" data-target="tree" data-side="left" data-min="160" title="Drag to resize, double-click to fold"></div>
+  <div id="center"></div>
+  <div class="split v" data-target="problems" data-side="right" data-min="180" title="Drag to resize, double-click to fold"></div>
+  <div id="problems"></div>
+</main>
+<div id="ctx"></div>
+<div id="modal"><div class="box"></div></div>
+<div id="toast"></div>
+<div id="tip"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="datapack.js"></script>
+<script src="mapgen.js" onerror="window.MAPGEN_MISSING=true"></script>
+<script src="preset-data.js"></script>
+<script src="forgemap-editor.js"></script>
+<script>
+// Project: files[path] = { kind, data (parsed JSON for Runeforged types), raw (text or bytes), parseError, dirty };
+// folders = explicit folder paths (folders that hold files exist anyway). Saved in this browser automatically.
+let files = {};
+let folders = new Set();
+let ns = 'my_pack';
+let packTitle = '';
+let selected = null;
+let problems = [];
+let clip = null;            // { mode: 'cut' | 'copy', path }
+let collapsed = new Set();
+
+const TEXT_EXT = /\.(json|mcmeta|mcfunction|txt|md|lang|properties|snbt|toml)$/i;
+const SECTIONS = [
+  { kind: 'forgemap', label: 'Forgemaps', dir: () => `data/${ns}/forgemaps` },
+  { kind: 'awakening', label: 'Awakening configs', dir: () => `data/${ns}/awakening_configs` },
+  { kind: 'tuning', label: 'Item tuning', dir: () => `data/${ns}/runeforge_item_tuning` },
+  { kind: 'tag', label: 'Forging tags', dir: () => 'data/iss_runeforged/tags/item/runeforgeable' },
+  { kind: 'abracadabra', label: 'Abracadabra spells', file: () => 'data/iss_runeforged/abracadabra_spells.json' },
+];
+const FOLDER_LABELS = [
+  [/^data$/, 'datapack'], [/^data\/iss_runeforged$/, 'the mod\'s shared files'],
+  [/^data\/[^/]+\/forgemaps$/, 'Forgemaps'], [/^data\/[^/]+\/awakening_configs$/, 'Awakening configs'],
+  [/^data\/[^/]+\/runeforge_item_tuning$/, 'Item tuning'], [/^data\/[^/]+\/tags\/item$/, 'Item tags'],
+  [/^data\/iss_runeforged\/tags\/item\/runeforgeable$/, 'Forging behaviours'], [/^data\/[^/]+\/function$/, 'Functions'],
+  [/^assets$/, 'resource pack part'], [/^assets\/[^/]+\/sounds$/, 'Music'],
+];
+
+// ---------------------------------------------------------------- small UI helpers
+function el(tag, props = {}, ...kids) { const e = Object.assign(document.createElement(tag), props); e.append(...kids); return e; }
+function escapeHtml(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]); }
+function toast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.style.display = 'block'; clearTimeout(toast.t); toast.t = setTimeout(() => t.style.display = 'none', 4000); }
+
+// In-page dialog (the app's browser pane blocks prompt/confirm). fields: [{ key, label, value, type: text|select|check, options, note }].
+// check(values) returns an error message or nothing. Resolves to the values, or null on cancel.
+function dialog({ title, fields = [], ok = 'OK', note = '', check }) {
+  const modal = document.getElementById('modal');
+  const box = modal.querySelector('.box');
+  box.innerHTML = '';
+  box.append(el('h2', { textContent: title }));
+  const inputs = {};
+  for (const f of fields) {
+    const wrap = el('div', { className: 'f' });
+    let input;
+    if (f.type === 'select') { input = el('select'); for (const o of f.options) input.append(el('option', { value: o.value ?? o, textContent: o.label ?? o, selected: (o.value ?? o) === f.value })); }
+    else if (f.type === 'check') input = el('input', { type: 'checkbox', checked: !!f.value });
+    else if (f.type === 'file') input = el('input', { type: 'file', multiple: true, accept: f.accept ?? '' });
+    else input = el('input', { type: 'text', value: f.value ?? '', placeholder: f.placeholder ?? '' });
+    inputs[f.key] = input;
+    if (f.type === 'check') wrap.append(el('label', {}, input, ' ' + f.label));
+    else wrap.append(el('label', { textContent: f.label }), input);
+    if (f.note) wrap.append(el('div', { className: 'note', textContent: f.note }));
+    box.append(wrap);
+  }
+  if (note) box.append(el('div', { className: 'note', innerHTML: note }));
+  const err = el('div', { className: 'err' });
+  box.append(err);
+  return new Promise(resolve => {
+    const values = () => Object.fromEntries(Object.entries(inputs).map(([k, i]) => [k, i.type === 'checkbox' ? i.checked : i.type === 'file' ? [...i.files] : i.value.trim()]));
+    const close = v => { modal.style.display = 'none'; document.removeEventListener('keydown', key); resolve(v); };
+    const submit = () => { const v = values(); const e = check && check(v); if (e) { err.textContent = e; return; } close(v); };
+    const key = e => { if (e.key === 'Escape') close(null); if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') submit(); };
+    document.addEventListener('keydown', key);
+    box.append(el('div', { className: 'btns' }, el('button', { textContent: 'Cancel', onclick: () => close(null) }), el('button', { className: 'primary', textContent: ok, onclick: submit })));
+    modal.style.display = 'flex';
+    box.querySelector('input,select')?.focus();
+  });
+}
+const confirmBox = async (title, note, ok = 'OK') => !!(await dialog({ title, note, ok }));
+
+// ---------------------------------------------------------------- project model
+const NAME_RE = /^[a-z0-9_.-]+$/;
+const parentOf = p => p.includes('/') ? p.slice(0, p.lastIndexOf('/')) : '';
+const baseOf = p => p.slice(p.lastIndexOf('/') + 1);
+const under = (p, dir) => dir === '' || p === dir || p.startsWith(dir + '/');
+const isDirty = () => Object.values(files).some(f => f.dirty);
+
+function allFolders() {
+  const out = new Set(folders);
+  for (const p of [...Object.keys(files), ...folders]) for (let d = parentOf(p); d; d = parentOf(d)) out.add(d);
+  return out;
+}
+
+// (Re)decides what a file is from its path: Runeforged types get parsed JSON, the rest stay as text or bytes.
+function classify(path) {
+  const f = files[path];
+  const kind = kindOf(path);
+  if (kind && f.data === undefined && !f.parseError) {
+    const text = typeof f.raw === 'string' ? f.raw : new TextDecoder().decode(f.raw ?? new Uint8Array());
+    try { f.data = JSON.parse(text); } catch (e) { f.parseError = e.message; f.raw = text; }
+  }
+  if (!kind && f.data !== undefined) { f.raw = JSON.stringify(f.data, null, 2) + '\n'; delete f.data; }
+  if (!kind) delete f.parseError;
+  f.kind = kind;
+  if (kind === 'forgemap' && f.data && typeof f.data === 'object' && ForgemapEditor.fromTicks(f)) f.dirty = true; // pre-ms maps
+}
+
+function putFile(path, rec) { files[path] = { dirty: true, ...rec }; classify(path); }
+function textOf(f) { return f.data !== undefined && (f.dirty || f.raw === undefined) ? JSON.stringify(f.data, null, 2) + '\n' : f.raw; }
+
+function uniquePath(path) {
+  if (!files[path] && !allFolders().has(path)) return path;
+  const dot = baseOf(path).lastIndexOf('.');
+  const stem = dot > 0 ? path.slice(0, path.length - baseOf(path).length + dot) : path;
+  const ext = dot > 0 ? baseOf(path).slice(dot) : '';
+  for (let i = 2; ; i++) if (!files[`${stem}_${i}${ext}`] && !allFolders().has(`${stem}_${i}${ext}`)) return `${stem}_${i}${ext}`;
+}
+
+// Moves or copies a file or folder (with everything inside) to a new path.
+function relocate(from, to, copy) {
+  if (from === to) return;
+  if (under(to, from) && to !== from) return toast('A folder cannot go inside itself.');
+  const moved = {};
+  for (const p of Object.keys(files)) if (under(p, from)) moved[p] = to + p.slice(from.length);
+  for (const [p, q] of Object.entries(moved)) {
+    const rec = copy ? structuredClone(files[p]) : files[p];
+    if (!copy) delete files[p];
+    files[q] = { ...rec, dirty: true };
+    classify(q);
+  }
+  for (const d of [...folders]) if (under(d, from)) { if (!copy) folders.delete(d); folders.add(to + d.slice(from.length)); }
+  if (!copy && parentOf(from)) folders.add(parentOf(from)); // the folder a file leaves stays in the tree
+  if (!copy && selected && under(selected, from)) selected = to + selected.slice(from.length);
+}
+
+function removePath(path) {
+  for (const p of Object.keys(files)) if (under(p, path)) delete files[p];
+  for (const d of [...folders]) if (under(d, path)) folders.delete(d);
+  if (selected && under(selected, path)) selected = null;
+}
+
+// ---------------------------------------------------------------- new pack, import, autosave
+async function newPackDialog() {
+  if (Object.keys(files).length && !(await confirmBox('Start a new pack?', 'The current pack is replaced. Export it first if you want to keep it.', 'Start new'))) return;
+  const v = await dialog({
+    title: 'New pack', ok: 'Create',
+    fields: [
+      { key: 'title', label: 'Pack name', value: 'My Runeforged Pack' },
+      { key: 'ns', label: 'Namespace', value: 'my_pack', note: 'Your own folder under data/. Lowercase letters, digits, _ - and . only.' },
+      { key: 'version', label: 'Minecraft version', type: 'select', value: '1.21.1', options: [{ value: '1.21.1', label: '1.21.1 (pack format 48)' }] },
+      { key: 'start', label: 'Start from', type: 'select', value: 'blank', options: [
+        { value: 'blank', label: 'Blank: empty folders' },
+        { value: 'elemental', label: 'Elemental lineup: the 8 Iron\'s Spells schools, ready to tune' }],
+        note: 'Elemental lineup copies the mod\'s awakening configs for every school and behaviour, the forging tags and a sounds.json, and lays out forgemaps per school and tier. The next window picks the forgemap difficulty.' },
+      { key: 'music', label: 'Include a music folder (assets/) for forgemap songs', type: 'check', value: false, note: 'Blank only; the elemental lineup always has one.' },
+      { key: 'abra', label: 'Include an Abracadabra spells file', type: 'check', value: false, note: 'Blank only.' },
+    ],
+    check: v => (!v.title ? 'Give the pack a name.' : !NAME_RE.test(v.ns) ? 'The namespace may only use lowercase letters, digits, _ - and .' : ''),
+  });
+  if (!v) return;
+  const lineup = v.start === 'elemental' && await elementalDialog();
+  if (v.start === 'elemental' && !lineup) return;
+  ForgemapEditor.close();
+  ns = v.ns; packTitle = v.title; files = {}; folders = new Set(); selected = null; collapsed = new Set();
+  putFile('pack.mcmeta', { data: { pack: { pack_format: DATAPACK_FORMAT, description: v.title } } });
+  for (const s of SECTIONS) if (s.dir) folders.add(s.dir());
+  if (lineup) await buildElemental(lineup);
+  else {
+    if (v.music) folders.add(`assets/${ns}/sounds`);
+    if (v.abra) putFile(SECTIONS[4].file(), { data: blank(SCHEMAS.abracadabra) });
+    toast(`Created ${v.title}. Right-click a folder to add files.`);
+  }
+  select('pack.mcmeta');
+}
+
+// ---------------------------------------------------------------- elemental lineup preset
+const LINEUP_SCHOOLS = BUNDLED_AWAKENING_SCHOOLS;
+const LINEUP_MODES = ['standard', 'catch', 'lanes'];
+
+async function elementalDialog() {
+  return dialog({
+    title: 'Elemental lineup: forgemaps', ok: 'Build pack',
+    fields: [
+      { key: 'difficulty', label: 'Difficulty', type: 'select', value: 'expert', options: DIFFICULTIES.map(d => ({ value: d.id, label: d.label })),
+        note: 'Only changes the forgemaps: note density, hit windows, approach speed and quality thresholds. Each tier (Novice to Grandmaster) still gets harder within it.' },
+      { key: 'maps', label: 'Forgemaps', type: 'select', value: 'songs', options: [
+        { value: 'songs', label: 'From my songs: build maps from the beats' },
+        { value: 'empty', label: 'Empty: folders only, map them yourself' }] },
+      { key: 'songs', label: 'Songs (.ogg)', type: 'file', accept: '.ogg', note: 'The mod ships no music, so maps need your own songs. They go into assets/ with a sounds.json entry.' },
+      { key: 'reuse', label: 'Using the songs', type: 'select', value: 'reuse', options: [
+        { value: 'reuse', label: 'Reuse each song across schools and tiers (every slot gets a map)' },
+        { value: 'once', label: 'One map per song (slots after the last song stay empty)' }] },
+    ],
+    note: 'Maps are a draft placed on the song\'s detected beats. Every school gets one map per tier for each minigame (Rune Forging, Catch the Rune, Runic Lanes).',
+    check: v => v.maps === 'songs' && !v.songs.length ? 'Add at least one .ogg song, or pick Empty.'
+      : v.maps === 'songs' && v.songs.some(f => !/\.ogg$/i.test(f.name)) ? 'Songs must be .ogg files (Minecraft only plays Ogg Vorbis).'
+      : v.maps === 'songs' && window.MAPGEN_MISSING ? 'mapgen.js did not load, so songs cannot be mapped.' : '',
+  });
+}
+
+// Copies the mod's shipped configs and tags (PRESET_DATA) and builds the forgemaps.
+async function buildElemental({ difficulty, maps, songs, reuse }) {
+  for (const [p, d] of Object.entries(PRESET_DATA)) putFile(p, { data: structuredClone(d) });
+  files[`assets/${ns}/sounds.json`] = { raw: '{}\n', dirty: true, kind: null };
+  const diff = DIFFICULTIES.find(d => d.id === difficulty);
+  files['pack.mcmeta'].data.pack.description = `${packTitle} (forgemaps: ${diff.label})`;
+  const dir = `data/${ns}/forgemaps`;
+  for (const s of LINEUP_SCHOOLS) folders.add(`${dir}/${s}`);
+  if (maps !== 'songs') return toast(`Built the elemental lineup (${diff.label}). Forgemap folders are empty.`);
+
+  const tracks = [];
+  for (const [i, f] of songs.entries()) {
+    toast(`Reading ${f.name} (${i + 1}/${songs.length})…`);
+    const bytes = new Uint8Array(await f.arrayBuffer());
+    let analysis;
+    try { analysis = await analyzeSong(bytes.slice().buffer); } catch (e) { toast(`Skipped ${f.name}: the browser could not decode it.`); continue; }
+    const name = f.name.replace(/\.ogg$/i, '').toLowerCase().replace(/[^a-z0-9_.-]+/g, '_');
+    tracks.push({ name, analysis, track: addSong(name, bytes) });
+  }
+  if (!tracks.length) return toast('No song could be read, so the forgemap folders stay empty.');
+  let slot = 0, made = 0;
+  for (const s of LINEUP_SCHOOLS) for (let tier = 0; tier < TIER_NAMES.length; tier++) for (const mode of LINEUP_MODES) {
+    const t = reuse === 'reuse' ? tracks[slot % tracks.length] : tracks[slot];
+    slot++;
+    if (!t) continue;
+    const name = `${s} ${TIER_NAMES[tier].toLowerCase()} ${mode}`;
+    const fm = buildForgemap({ analysis: t.analysis, mode, tier, difficulty, school: `irons_spellbooks:${s}`, name, musicTrack: t.track, seed: slot });
+    putFile(`${dir}/${s}/tier${tier}_${TIER_NAMES[tier].toLowerCase()}_${mode}.json`, { data: fm, editor: { bpm: Math.round(t.analysis.bpm * 100) / 100, snap: 4, window: fm.notes[0]?.hit_window_ms ?? 200 } });
+    made++;
+  }
+  toast(`Built the elemental lineup (${diff.label}): ${made} forgemaps from ${tracks.length} song${tracks.length > 1 ? 's' : ''}.`);
+}
+
+async function importFiles(list, intoFolder) {
+  for (const file of list) {
+    if (/\.zip$/i.test(file.name)) await importZip(file);
+    else {
+      const folder = intoFolder ?? (selected ? (files[selected] ? parentOf(selected) : selected) : '');
+      const path = uniquePath((folder ? folder + '/' : '') + file.name.toLowerCase().replace(/\s+/g, '_'));
+      putFile(path, { raw: TEXT_EXT.test(file.name) ? await file.text() : new Uint8Array(await file.arrayBuffer()) });
+      toast(`Added ${path}`);
+      selected = path;
+    }
+  }
+  select(selected);
+}
+
+// A datapack zip merges into the current pack (or becomes it when the pack is empty). Old forgemap
+// exports keep the datapack and the music in two folders; both are read.
+async function importZip(file) {
+  const zip = await JSZip.loadAsync(file);
+  if (zip.file('runeforged_dump.txt')) return importDump(zip);
+  const names = Object.keys(zip.files).filter(n => !zip.files[n].dir);
+  const roots = names.filter(n => n.endsWith('pack.mcmeta')).map(n => n.slice(0, -'pack.mcmeta'.length)).sort((a, b) => a.length - b.length);
+  const main = roots.find(r => names.some(n => n.startsWith(r + 'data/'))) ?? (names.some(n => n.startsWith('data/')) ? '' : roots[0]);
+  if (main === undefined) return toast(`${file.name} has no pack.mcmeta or data folder, so it isn't a datapack.`);
+  const fresh = !Object.keys(files).length;
+  let added = 0, replaced = 0;
+  for (const n of names) {
+    let rel = null;
+    if (n.startsWith(main)) rel = n.slice(main.length);
+    else { const r = roots.find(r => n.startsWith(r + 'assets/')); if (r !== undefined) rel = n.slice(r.length); }
+    if (!rel || (rel !== 'pack.mcmeta' && !rel.startsWith('data/') && !rel.startsWith('assets/'))) continue;
+    if (rel === 'pack.mcmeta' && !fresh) continue;
+    if (files[rel]) replaced++; else added++;
+    files[rel] = { raw: TEXT_EXT.test(rel) ? await zip.file(n).async('string') : await zip.file(n).async('uint8array'), dirty: !fresh };
+    classify(rel);
+  }
+  if (fresh) {
+    const spaces = [...new Set(Object.keys(files).map(p => p.match(/^data\/([^/]+)\//)?.[1]).filter(Boolean))];
+    ns = spaces.find(s => !['iss_runeforged', 'minecraft', 'irons_spellbooks'].includes(s)) ?? spaces[0] ?? 'my_pack';
+    const d = files['pack.mcmeta']?.data?.pack?.description;
+    packTitle = typeof d === 'string' ? d : file.name.replace(/\.zip$/i, '');
+    selected = 'pack.mcmeta';
+  }
+  toast(fresh ? `Opened ${file.name} (${added} files).` : `Merged ${file.name}: ${added} added, ${replaced} replaced.`);
+}
+
+document.addEventListener('dragover', e => { if (e.dataTransfer.types.includes('Files')) { e.preventDefault(); document.body.classList.add('dragging'); } });
+document.addEventListener('dragleave', e => { if (!e.relatedTarget) document.body.classList.remove('dragging'); });
+document.addEventListener('drop', e => { document.body.classList.remove('dragging'); if (e.dataTransfer.files.length) { e.preventDefault(); importFiles([...e.dataTransfer.files], e.target.closest?.('.row')?.dataset.folder); } });
+
+// Autosave the whole project (music included) in this browser's IndexedDB.
+function db() { return new Promise((res, rej) => { const r = indexedDB.open('runeforged-pack-editor', 1); r.onupgradeneeded = () => r.result.createObjectStore('p'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); }
+async function saveProject() {
+  try { const d = await db(); d.transaction('p', 'readwrite').objectStore('p').put({ files, folders: [...folders], ns, packTitle, selected }, 'current'); } catch (e) { /* storage blocked: the editor still works, it just won't restore */ }
+}
+async function loadProject() {
+  try {
+    const d = await db();
+    const v = await new Promise(res => { const r = d.transaction('p').objectStore('p').get('current'); r.onsuccess = () => res(r.result); r.onerror = () => res(null); });
+    if (v && Object.keys(v.files).length) {
+      files = v.files; folders = new Set(v.folders); ns = v.ns; packTitle = v.packTitle;
+      for (const f of Object.values(files)) if (f.kind === 'forgemap' && f.data && ForgemapEditor.fromTicks(f)) f.dirty = true;
+      return v.selected;
+    }
+  } catch (e) { /* no saved project */ }
+  return null;
+}
+
+// ---------------------------------------------------------------- tree + right-click menu
+function renderTree() {
+  const tree = document.getElementById('tree');
+  if (!Object.keys(files).length && !folders.size) {
+    tree.innerHTML = '<div class="hint" style="padding:6px">No pack open.<br><br><button onclick="newPackDialog()">New pack</button> or drop a datapack zip anywhere on the page.</div>';
+    return;
+  }
+  const errFiles = new Set(problems.filter(p => !p.warn).map(p => p.file));
+  const dirs = allFolders();
+  const kids = dir => {
+    const out = new Set();
+    for (const p of [...Object.keys(files), ...dirs]) if (parentOf(p) === dir && p !== dir) out.add(p);
+    // root: pack.mcmeta, then data/, then the rest; inside folders: folders first
+    const rank = p => dir === '' ? (dirs.has(p) ? (p === 'data' ? 1 : 2) : 0) : (dirs.has(p) ? 0 : 1);
+    return [...out].sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
+  };
+  const rows = [`<div class="row" data-folder="" ${drag('')}><span class="tw"></span>📦 ${escapeHtml(packTitle || ns)}<span class="lab">${ns}.zip</span></div>`];
+  const walk = (dir, depth) => {
+    for (const p of kids(dir)) {
+      const pad = `style="padding-left:${6 + depth * 14}px"`;
+      const cut = clip?.mode === 'cut' && under(p, clip.path) ? ' cut' : '';
+      if (dirs.has(p)) {
+        const label = FOLDER_LABELS.find(([re]) => re.test(p))?.[1];
+        const open = !collapsed.has(p);
+        rows.push(`<div class="row${p === selected ? ' sel' : ''}${cut}" ${pad} data-folder="${escapeHtml(p)}" draggable="true" ${drag(p)}><span class="tw" data-toggle="${escapeHtml(p)}">${open ? '▾' : '▸'}</span>📁 ${escapeHtml(baseOf(p))}${label ? `<span class="lab">${label}</span>` : ''}</div>`);
+        if (open) walk(p, depth + 1);
+      } else {
+        const f = files[p];
+        const icon = f.kind ? '📄' : TEXT_EXT.test(p) ? '📝' : '🎵';
+        rows.push(`<div class="row${p === selected ? ' sel' : ''}${cut}" ${pad} data-file="${escapeHtml(p)}" draggable="true"><span class="tw"></span>${icon} ${escapeHtml(baseOf(p))}${errFiles.has(p) ? ' <span class="err">●</span>' : ''}</div>`);
+      }
+    }
+  };
+  walk('', 1);
+  rows.push('<div class="hint" style="margin:14px 6px 4px">Right-click a folder or file for New file, New folder, Rename, Cut, Copy, Paste and Delete. Drag to move. Quick add:</div>');
+  SECTIONS.forEach((s, i) => rows.push(`<div class="row" onclick="quickAdd(${i})"><span class="tw" style="color:var(--accent)">＋</span>${s.label}</div>`));
+  tree.innerHTML = rows.join('');
+}
+function drag(dir) { return `ondragover="treeDragOver(event)" ondragleave="this.classList.remove('drop')" ondrop="treeDrop(event, '${escapeHtml(dir)}')"`; }
+
+document.getElementById('tree').addEventListener('click', e => {
+  const t = e.target.closest('[data-toggle]');
+  if (t) { const p = t.dataset.toggle; collapsed.has(p) ? collapsed.delete(p) : collapsed.add(p); return renderTree(); }
+  const row = e.target.closest('.row');
+  if (row?.dataset.file !== undefined) select(row.dataset.file);
+  else if (row?.dataset.folder) select(row.dataset.folder);
+});
+document.getElementById('tree').addEventListener('dragstart', e => { const row = e.target.closest('.row'); const p = row?.dataset.file ?? row?.dataset.folder; if (p) e.dataTransfer.setData('text/x-pack-path', p); });
+function treeDragOver(e) { if (e.dataTransfer.types.includes('text/x-pack-path') || e.dataTransfer.types.includes('Files')) { e.preventDefault(); e.currentTarget.classList.add('drop'); } }
+function treeDrop(e, dir) {
+  e.currentTarget.classList.remove('drop');
+  const from = e.dataTransfer.getData('text/x-pack-path');
+  if (!from) return; // files from the desktop are handled by the page-wide drop
+  e.preventDefault(); e.stopPropagation();
+  const to = (dir ? dir + '/' : '') + baseOf(from);
+  if (to === from) return;
+  if (files[to] || allFolders().has(to)) return toast(`${to} already exists.`);
+  ForgemapEditor.close();
+  relocate(from, to, false);
+  select(selected);
+}
+
+document.getElementById('tree').addEventListener('contextmenu', e => {
+  const row = e.target.closest('.row');
+  if (!row) return;
+  e.preventDefault();
+  const isFile = row.dataset.file !== undefined;
+  const path = isFile ? row.dataset.file : row.dataset.folder;
+  const folder = isFile ? parentOf(path) : path;
+  const items = [
+    ['New file…', () => newFile(folder)], ['New folder…', () => newFolder(folder)],
+    ['Import files here…', () => { const i = document.getElementById('importin'); i.onchange = () => { importFiles([...i.files], folder); i.value = ''; i.onchange = () => { importFiles([...i.files]); i.value = ''; }; }; i.click(); }],
+    '-',
+  ];
+  if (path !== '' && path !== 'pack.mcmeta') items.push(['Rename…', () => renamePath(path)], ['Cut', () => { clip = { mode: 'cut', path }; renderTree(); }], ['Copy', () => { clip = { mode: 'copy', path }; renderTree(); }]);
+  items.push([clip ? `Paste ${baseOf(clip.path)}` : 'Paste', () => paste(folder), !clip]);
+  if (isFile && files[path].kind) items.push(['Duplicate', () => { const q = uniquePath(path); relocate(path, q, true); select(q); }]);
+  if (path !== '' && path !== 'pack.mcmeta') items.push('-', ['Delete', () => deletePath(path)]);
+  showMenu(e.clientX, e.clientY, items);
+});
+function showMenu(x, y, items) {
+  const m = document.getElementById('ctx');
+  m.innerHTML = '';
+  for (const it of items) {
+    if (it === '-') { m.append(el('hr')); continue; }
+    const [label, fn, off] = it;
+    m.append(el('div', { textContent: label, className: off ? 'off' : '', onclick: () => { hideMenu(); fn(); } }));
+  }
+  m.style.display = 'block';
+  m.style.left = Math.min(x, innerWidth - m.offsetWidth - 8) + 'px';
+  m.style.top = Math.min(y, innerHeight - m.offsetHeight - 8) + 'px';
+}
+function hideMenu() { document.getElementById('ctx').style.display = 'none'; }
+document.addEventListener('click', e => { if (!e.target.closest('#ctx')) hideMenu(); });
+
+// What a new file in this folder will be.
+function typeForFolder(folder) {
+  const k = kindOf(folder + '/x.json');
+  return k ? SECTIONS.find(s => s.kind === k)?.label ?? k : null;
+}
+
+async function newFile(folder) {
+  if (!files['pack.mcmeta']) return newPackDialog();
+  if (kindOf(folder + '/x.json') === 'tuning') return newTuning(folder);
+  const type = typeForFolder(folder);
+  const v = await dialog({
+    title: type ? `New ${type.replace(/s$/, '').toLowerCase()}` : 'New file', ok: 'Create',
+    fields: [{ key: 'name', label: 'File name', value: type ? '' : 'new_file.json', placeholder: type ? 'my_file' : 'name.json or name.mcfunction' }],
+    note: `In <code>${escapeHtml(folder || '(pack root)')}</code>.${type ? '' : ' Runeforged types get forms when they sit in their folders: forgemaps/, awakening_configs/, runeforge_item_tuning/, tags/item/.'}`,
+    check: v => (!/^[a-z0-9_.-]+$/.test(v.name) ? 'Use lowercase letters, digits, _ - and . only.' : ''),
+  });
+  if (!v) return;
+  let name = v.name;
+  if (type && !name.endsWith('.json')) name += '.json';
+  const path = (folder ? folder + '/' : '') + name;
+  if (files[path] || allFolders().has(path)) return toast(`${path} already exists.`);
+  const kind = kindOf(path);
+  let rec = { raw: name.endsWith('.json') ? '{}\n' : '' };
+  if (kind) rec = { data: newData(kind, path) };
+  putFile(path, rec);
+  select(path);
+}
+
+function newData(kind, path) {
+  if (kind === 'forgemap') return blankForgemap(baseOf(path).replace('.json', ''));
+  const data = blank(SCHEMAS[kind]);
+  if (kind === 'awakening') {
+    const m = path.match(/awakening_configs\/(\w+)\/(\w+)\.json$/);
+    const school = m && BEHAVIORS.includes(m[2]) ? m[1] : 'fire';
+    data.school = `irons_spellbooks:${school}`;
+    if (RUNES.includes(school)) data.matching_rune = `irons_spellbooks:${school}_rune`;
+    if (m && BEHAVIORS.includes(m[2])) data.behavior = m[2];
+    data.triggers = [{ event: 'on_activate', actions: [{ type: 'play_sound', sound: 'minecraft:entity.blaze.shoot' }] }];
+  }
+  return data;
+}
+
+async function quickAdd(i) {
+  const s = SECTIONS[i];
+  if (!files['pack.mcmeta']) return newPackDialog();
+  if (s.file) { const p = s.file(); if (!files[p]) putFile(p, { data: blank(SCHEMAS[s.kind]) }); return select(p); }
+  if (s.kind === 'awakening') {
+    const v = await dialog({
+      title: 'New awakening config', ok: 'Create',
+      fields: [
+        { key: 'school', label: 'School', type: 'select', value: 'fire', options: BUNDLED_AWAKENING_SCHOOLS },
+        { key: 'behavior', label: 'Behaviour', type: 'select', value: 'melee', options: BEHAVIORS },
+      ],
+      note: 'If the mod already ships this school and behaviour, the file is saved at the mod\'s path so it replaces the built-in one.',
+    });
+    if (!v) return;
+    const bundled = BUNDLED_AWAKENING_SCHOOLS.includes(v.school) && BUNDLED_AWAKENING_BEHAVIORS.includes(v.behavior);
+    const path = `data/${bundled ? 'iss_runeforged' : ns}/awakening_configs/${v.school}/${v.behavior}.json`;
+    if (!files[path]) putFile(path, { data: newData('awakening', path) });
+    return select(path);
+  }
+  if (s.kind === 'tuning') return newTuning(s.dir());
+  folders.add(s.dir());
+  newFile(s.dir());
+}
+
+async function newTuning(folder) {
+  const v = await dialog({
+    title: 'New item tuning', ok: 'Create',
+    fields: [
+      { key: 'mode', label: 'Tune', type: 'select', value: 'single', options: [{ value: 'single', label: 'One item' }, { value: 'group', label: 'A group of items or #tags' }] },
+      { key: 'id', label: 'Item id, or the group\'s file name', placeholder: 'irons_spellbooks:graybeard_staff  or  my_staffs' },
+    ],
+    note: 'A single item\'s file is named after the item.',
+    check: v => (v.mode === 'single' ? (!/^[a-z0-9_.-]+:[a-z0-9_./-]+$/.test(v.id) ? 'Give a full item id, such as irons_spellbooks:graybeard_staff.' : '')
+      : (!/^[a-z0-9_.-]+$/.test(v.id) ? 'Name the group: lowercase letters, digits, _ - and . only.' : '')),
+  });
+  if (!v) return;
+  const name = v.mode === 'single' ? v.id.split(':')[1].replace(/\//g, '_') : v.id;
+  const path = `${folder}/${name}.json`;
+  if (files[path]) return select(path);
+  putFile(path, { data: { items: v.mode === 'single' ? [v.id] : [], supported_attributes: ['irons_spellbooks:spell_power'] }, tuneMode: v.mode });
+  select(path);
+}
+
+async function newFolder(parent) {
+  const v = await dialog({ title: 'New folder', ok: 'Create', fields: [{ key: 'name', label: 'Folder name', placeholder: 'my_folder' }], note: `In <code>${escapeHtml(parent || '(pack root)')}</code>. Empty folders are not exported.`, check: v => (!/^[a-z0-9_.-]+$/.test(v.name) ? 'Use lowercase letters, digits, _ - and . only.' : '') });
+  if (!v) return;
+  const path = (parent ? parent + '/' : '') + v.name;
+  if (files[path] || allFolders().has(path)) return toast(`${path} already exists.`);
+  folders.add(path);
+  collapsed.delete(parent);
+  refresh();
+}
+
+async function renamePath(path) {
+  const v = await dialog({ title: 'Rename', ok: 'Rename', fields: [{ key: 'name', label: 'New name', value: baseOf(path) }], check: v => (!/^[a-z0-9_.-]+$/.test(v.name) ? 'Use lowercase letters, digits, _ - and . only.' : '') });
+  if (!v || v.name === baseOf(path)) return;
+  const to = (parentOf(path) ? parentOf(path) + '/' : '') + v.name;
+  if (files[to] || allFolders().has(to)) return toast(`${to} already exists.`);
+  ForgemapEditor.close();
+  relocate(path, to, false);
+  select(selected);
+}
+
+function paste(folder) {
+  if (!clip) return;
+  const to = uniquePath((folder ? folder + '/' : '') + baseOf(clip.path));
+  ForgemapEditor.close();
+  relocate(clip.path, to, clip.mode === 'copy');
+  if (clip.mode === 'cut') clip = null;
+  select(selected);
+}
+
+async function deletePath(path) {
+  const n = Object.keys(files).filter(p => under(p, path)).length;
+  if (!(await confirmBox(`Delete ${baseOf(path)}?`, files[path] ? escapeHtml(path) : `The folder and the ${n} file${n === 1 ? '' : 's'} in it are removed.`, 'Delete'))) return;
+  ForgemapEditor.close();
+  removePath(path);
+  select(selected);
+}
+
+// ---------------------------------------------------------------- center
+let rawView = false;
+function select(path) {
+  hideMenu();
+  ForgemapEditor.close();
+  selected = path;
+  const center = document.getElementById('center');
+  center.className = '';
+  center.innerHTML = '';
+  const f = files[path];
+  if (!f) {
+    const dir = path && allFolders().has(path);
+    center.innerHTML = dir
+      ? `<div class="empty"><h2>📁 ${escapeHtml(path)}</h2>${typeForFolder(path) ? `New files here are <b>${typeForFolder(path)}</b>.` : 'A folder.'} Right-click it in the tree to add files or folders.</div>`
+      : `<div class="empty"><h2>Runeforged pack editor</h2><ul><li><b>New pack</b> lays out the datapack folders.</li><li><b>Import</b> (or drop a zip on the page) opens a datapack, or merges it into the open one.</li><li>Right-click folders and files in the tree to add, rename, move, copy and delete. Drag to move.</li><li>Forgemaps, awakening configs, item tuning, Abracadabra spells and item tags open as editors. Other files open as text.</li><li>Problems show on the right. Export stays locked until every red one is fixed.</li><li>Your pack is saved in this browser as you work.</li></ul></div>`;
+    return refresh();
+  }
+  const crumb = el('div', { className: 'crumb' }, el('span', { textContent: path }), el('span', { style: 'flex:1' }));
+  if (f.kind && f.kind !== 'forgemap' && !f.parseError) crumb.append(el('button', { textContent: rawView ? 'Form' : 'Raw JSON', onclick: () => { rawView = !rawView; select(path); } }));
+  if (path !== 'pack.mcmeta') crumb.append(el('button', { textContent: 'Delete', onclick: () => deletePath(path) }));
+  if (f.kind === 'forgemap' && !f.parseError) return openForgemap(path, crumb);
+  center.append(crumb);
+  if (f.kind && !f.parseError && !rawView) {
+    const form = el('div', { id: 'form' });
+    renderForm(form, f);
+    center.append(form);
+  } else if (typeof f.raw === 'string' || f.kind) {
+    if (f.parseError) center.append(el('div', { className: 'hint', textContent: 'This file is not valid JSON: ' + f.parseError + '. Fix the text and click Apply.' }));
+    const ta = el('textarea', { className: 'big', value: f.kind && !f.parseError ? JSON.stringify(f.data, null, 2) : f.raw, spellcheck: false });
+    center.append(ta);
+    if (f.kind) center.append(el('button', { textContent: 'Apply', style: 'margin-top:6px', onclick: () => { try { f.data = JSON.parse(ta.value); delete f.parseError; f.dirty = true; rawView = false; select(path); } catch (e) { toast('Not valid JSON: ' + e.message); } } }));
+    else ta.oninput = () => { f.raw = ta.value; changed(f); };
+  } else {
+    center.insertAdjacentHTML('beforeend', `<div class="empty">A binary file (${f.raw?.length ?? 0} bytes). It goes into the export unchanged.</div>`);
+  }
+  refresh();
+}
+
+function renderForm(form, f) {
+  form.innerHTML = '';
+  if (f.kind === 'tuning' && f.data && typeof f.data === 'object') return renderTuning(form, f);
+  form.append(node(SCHEMAS[f.kind], { v: f.data }, 'v', '', null, f, true));
+  markErrors();
+}
+
+// Item tuning: one file either tunes a single item or a group (several items and/or #tags).
+// The file format is the same; a single item is a one-entry items list.
+const tuningSingle = d => Array.isArray(d.items) && d.items.length <= 1 && !String(d.items[0] ?? '').startsWith('#');
+function renderTuning(form, f) {
+  const d = f.data;
+  if (f.tuneMode === undefined) f.tuneMode = tuningSingle(d) ? 'single' : 'group';
+  const radio = (mode, text) => el('label', { style: 'margin-right:14px;cursor:pointer' },
+    el('input', { type: 'radio', name: 'tunemode', checked: f.tuneMode === mode, onchange: async () => {
+      if (mode === 'single' && Array.isArray(d.items) && d.items.length > 1
+          && !(await confirmBox('Tune one item only?', `Only the first entry (<code>${escapeHtml(d.items[0])}</code>) is kept.`, 'Keep first'))) return rerender();
+      if (mode === 'single') d.items = Array.isArray(d.items) && d.items[0] && !d.items[0].startsWith('#') ? [d.items[0]] : [''];
+      f.tuneMode = mode; changed(f); rerender();
+    } }), ' ' + text);
+  form.append(el('fieldset', {},
+    el('legend', { textContent: 'This file tunes' }),
+    radio('single', 'One item'), radio('group', 'A group (several items and/or #item tags)'),
+    el('div', { className: 'hint', textContent: f.tuneMode === 'single'
+      ? 'Only the attributes below can be forged onto this item.'
+      : 'Every item in the group shares the attributes below. An item listed by id in any file wins over a tag; when several tags match one item, their attributes are combined.' })));
+  const s = SCHEMAS.tuning;
+  const root = el('div', { className: 'field' });
+  root.dataset.path = '';
+  if (f.tuneMode === 'single') {
+    if (!Array.isArray(d.items)) d.items = [''];
+    const holder = { get item() { return d.items[0]; }, set item(v) { d.items = [v]; } };
+    const w = el('div', { className: 'field' }, node(s.fields.items.of, holder, 'item', 'items[0]', 'item', f));
+    w.dataset.path = 'items';
+    root.append(w);
+  } else root.append(d.items !== undefined ? node(s.fields.items, d, 'items', 'items', 'items', f) : el('button', { className: 'opt', textContent: '+ items (required)', onclick: () => { d.items = blank(s.fields.items); changed(f); rerender(); } }));
+  root.append(d.supported_attributes !== undefined ? node(s.fields.supported_attributes, d, 'supported_attributes', 'supported_attributes', 'supported_attributes', f)
+    : el('button', { className: 'opt', textContent: '+ supported_attributes (required)', onclick: () => { d.supported_attributes = blank(s.fields.supported_attributes); changed(f); rerender(); } }));
+  for (const k of Object.keys(d)) if (!(k in s.fields)) {
+    const w = el('div', { className: 'field' }, el('div', { className: 'line' }, el('label', { textContent: k }), raw(d, k, f), el('button', { className: 'x', textContent: '✕', onclick: () => { delete d[k]; changed(f); rerender(); } })));
+    w.dataset.path = k;
+    root.append(w);
+  }
+  if (d[CONDITIONS_KEY] === undefined) root.append(el('button', { className: 'opt', textContent: '+ ' + CONDITIONS_KEY, title: 'Load this file only when, for example, another mod is installed', onclick: () => { d[CONDITIONS_KEY] = [{ type: 'neoforge:mod_loaded', modid: 'some_mod' }]; changed(f); rerender(); } }));
+  form.append(root);
+  markErrors();
+}
+
+function rerender() {
+  const form = document.getElementById('form');
+  if (!form) return;
+  const y = document.getElementById('center').scrollTop;
+  renderForm(form, files[selected]);
+  document.getElementById('center').scrollTop = y;
+  refresh();
+}
+
+function changed(f) { f.dirty = true; clearTimeout(changed.t); changed.t = setTimeout(refresh, 150); }
+
+// One schema node as DOM. holder[key] is the value; path matches the checker's paths.
+function node(s, holder, key, path, label, f, isRoot, onRemove) {
+  const wrap = el('div', { className: 'field' });
+  wrap.dataset.path = path;
+  const v = holder[key];
+  const rm = onRemove ? el('button', { className: 'x', textContent: '✕', title: 'Remove', onclick: onRemove }) : '';
+  const line = input => { wrap.append(el('div', { className: 'line' }, el('label', { textContent: label ?? '', title: s.desc || '' }), input, rm)); return wrap; };
+  const set = val => { holder[key] = val; changed(f); };
+
+  if (s.t === 'object' || s.t === 'union') {
+    const box = isRoot ? wrap : el('fieldset');
+    if (!isRoot) { box.append(el('legend', { textContent: label ?? '' })); wrap.append(box); }
+    if (!v || typeof v !== 'object' || Array.isArray(v)) { box.append(raw(holder, key, f)); return wrap; }
+    let fields = s.fields;
+    if (s.t === 'union') {
+      const sel = el('select', { onchange: () => { holder[key] = { ...blankAction(s, sel.value), ...(v.target && 'target' in s.variants[sel.value] ? { target: v.target } : {}) }; changed(f); rerender(); } });
+      const types = Object.keys(s.variants);
+      for (const t of types.includes(v.type) ? types : [v.type, ...types]) sel.append(el('option', { value: t, textContent: t, selected: t === v.type }));
+      const tw = el('div', { className: 'field' }, el('div', { className: 'line' }, el('label', { textContent: 'type' }), sel, rm));
+      tw.dataset.path = path ? `${path}.type` : 'type';
+      box.append(tw);
+      fields = s.variants[v.type] || {};
+    } else if (rm) box.querySelector('legend').append(' ', rm);
+    const opts = el('div');
+    for (const [k, fs] of Object.entries(fields)) {
+      const p = path ? `${path}.${k}` : k;
+      if (v[k] !== undefined) box.append(node(fs, v, k, p, k, f, false, fs.req ? null : () => { delete v[k]; changed(f); rerender(); }));
+      else {
+        const b = el('button', { className: 'opt', textContent: `+ ${k}${fs.req ? ' (required)' : ''}`, title: fs.desc || '', onclick: () => { v[k] = blank(fs); changed(f); rerender(); } });
+        if (fs.req) { const w = el('div', { className: 'field' }, b); w.dataset.path = p; box.append(w); } else opts.append(b);
+      }
+    }
+    const known = new Set(Object.keys(fields).concat(s.t === 'union' ? ['type'] : []));
+    if (!s.open) for (const k of Object.keys(v)) {
+      if (known.has(k)) continue;
+      const w = el('div', { className: 'field' }, el('div', { className: 'line' }, el('label', { textContent: k, title: k === CONDITIONS_KEY ? 'NeoForge load conditions (JSON)' : 'Not a field of this type' }), raw(v, k, f), el('button', { className: 'x', textContent: '✕', onclick: () => { delete v[k]; changed(f); rerender(); } })));
+      w.dataset.path = path ? `${path}.${k}` : k;
+      box.append(w);
+    }
+    if (s.conditions && v[CONDITIONS_KEY] === undefined) opts.append(el('button', { className: 'opt', textContent: '+ ' + CONDITIONS_KEY, title: 'Load this file only when, for example, another mod is installed', onclick: () => { v[CONDITIONS_KEY] = [{ type: 'neoforge:mod_loaded', modid: 'some_mod' }]; changed(f); rerender(); } }));
+    if (opts.childNodes.length) box.append(opts);
+    return wrap;
+  }
+  if (s.t === 'list') {
+    const box = el('fieldset', {}, el('legend', { textContent: `${label} ` }));
+    if (rm) box.querySelector('legend').append(rm);
+    wrap.append(box);
+    if (!Array.isArray(v)) { box.append(raw(holder, key, f)); return wrap; }
+    v.forEach((_, i) => box.append(el('div', { className: 'item' }, node(s.of, v, i, `${path}[${i}]`, s.of.t === 'object' || s.of.t === 'union' ? `${label} ${i + 1}` : '', f, false, () => { v.splice(i, 1); changed(f); rerender(); }))));
+    box.append(el('button', { className: 'opt', textContent: `+ add to ${label}`, onclick: () => { v.push(blank(s.of)); changed(f); rerender(); } }));
+    return wrap;
+  }
+  if (s.t === 'bool') return line(el('input', { type: 'checkbox', checked: v === true, onchange: e => set(e.target.checked) }));
+  if (s.t === 'enum') {
+    const sel = el('select', { onchange: e => set(e.target.value) });
+    for (const o of s.values.includes(v) ? s.values : [v, ...s.values]) sel.append(el('option', { value: o, textContent: o, selected: o === v }));
+    return line(sel);
+  }
+  if (s.t === 'int' || s.t === 'num') return line(el('input', { type: 'text', value: v ?? '', placeholder: s.desc || '', title: s.desc || '', oninput: e => { const t = e.target.value.trim(); set(t !== '' && Number.isFinite(Number(t)) ? Number(t) : t); } }));
+  if ((s.t === 'text' || s.t === 'tagentry') && v && typeof v === 'object') return line(raw(holder, key, f));
+  const input = el('input', { type: 'text', value: v ?? '', placeholder: s.desc || '', title: s.desc || '', oninput: e => set(e.target.value) });
+  const cat = s.t === 'id' && dump ? dumpCategory(path, s) : null;
+  if (cat) input.setAttribute('list', dumpList(cat, s.suggest));
+  else if (s.suggest) { const id = 'dl-' + path.replace(/\W/g, '_'); input.setAttribute('list', id); wrap.append(el('datalist', { id }, ...s.suggest.map(x => el('option', { value: x })))); }
+  return line(input);
+}
+
+// ---------------------------------------------------------------- editor dump (/runeforged dump)
+// The zip the game writes: plain text lists of every id it knows. Loaded lists become the choices
+// in id fields; typed ids that aren't listed still work.
+let dump = null;
+const DUMP_FIELDS = { effect: 'effects', sound: 'sounds', particle: 'particles', spell: 'spells', attribute: 'attributes',
+  supported_attributes: 'attributes', school: 'schools', function: 'functions', matching_rune: 'items' };
+function dumpCategory(path, s) {
+  const name = path.replace(/\[\d+\]$/, '').split('.').pop();
+  return DUMP_FIELDS[name] ?? (s.tagOk ? 'items+tags' : null);
+}
+function dumpList(cat, extra = []) {
+  const id = 'dump-' + cat.replace(/\W/g, '_');
+  if (!document.getElementById(id)) {
+    const rows = cat === 'items+tags' ? [...dump.items, ...dump.tags] : dump[cat] ?? [];
+    const seen = new Set(rows.map(r => r[0]));
+    const opts = [...extra.filter(x => !seen.has(x)).map(x => [x]), ...rows];
+    document.body.append(el('datalist', { id }, ...opts.map(([v, ...rest]) => el('option', { value: v, label: rest.filter(Boolean).join(' · ') }))));
+  }
+  return id;
+}
+async function importDump(zip) {
+  const read = async n => (zip.file(n) ? await zip.file(n).async('string') : '').split('\n').filter(l => l && !l.startsWith('# ')).map(l => l.split('\t'));
+  const d = { header: await read('runeforged_dump.txt'), items: [], tags: await read('tags/items.txt') };
+  // Item fields offer gear only (armour, weapons, curios), forgeable first; food, blocks, ores etc. are left out.
+  const rows = [];
+  for (const [file, group] of DUMP_ITEM_GROUPS) {
+    const list = await read(`items/${file}.txt`);
+    const g = { group, forgeable: 0, can: 0, slots: {} };
+    for (const [idv, name, state, slot] of list) {
+      g[state === 'forgeable' ? 'forgeable' : 'can']++;
+      if (slot) g.slots[slot] = (g.slots[slot] ?? 0) + 1;
+      d.items.push([idv, name, group + (slot ? ` (${slot})` : '') + (state === 'forgeable' ? '' : ' · can be made forgeable'), state]);
+    }
+    rows.push(g);
+  }
+  d.items = d.items.sort((a, b) => (a[3] === 'forgeable' ? 0 : 1) - (b[3] === 'forgeable' ? 0 : 1)).map(r => r.slice(0, 3));
+  d.v = 2;
+  for (const k of ['spells', 'schools', 'attributes', 'effects', 'sounds', 'particles', 'functions', 'guns']) d[k] = await read(k + '.txt');
+  setDump(d);
+  try { const x = await db(); x.transaction('p', 'readwrite').objectStore('p').put(d, 'dump'); } catch (e) { /* kept for this visit only */ }
+  const mods = d.header.filter(r => r[0] === 'mod').length, other = (await read('items/other.txt')).length;
+  const td = s => `<td style="padding:2px 10px 2px 0">${s}</td>`;
+  const table = rows.map(g => `<tr>${td(g.group)}${td(g.forgeable)}${td(g.can)}${td(Object.entries(g.slots).map(([s, n]) => `${s} ${n}`).join(', '))}</tr>`).join('');
+  await dialog({ title: `Ids from your game (${mods} mods)`, ok: 'OK', note:
+    `<table><tr>${td('<b>Group</b>')}${td('<b>Forgeable</b>')}${td('<b>Can be made forgeable</b>')}${td('')}</tr>${table}</table>`
+    + `<p><b>Forgeable</b> items are in the mod's forging tags now. <b>Can be made forgeable</b> items look like that group but no forging tag lists them yet: add them (or one of their tags) to that group's Forging tag.</p>`
+    + (d.guns.length ? `<p><b>TACZ guns:</b> ${d.guns.length} gun ids from the loaded gun packs (${Object.entries(d.guns.reduce((m, g) => (m[g[2]] = (m[g[2]] ?? 0) + 1, m), {})).map(([t, n]) => `${t} ${n}`).join(', ')}). TACZ guns share one item per item type (${[...new Set(d.guns.map(g => g[3]))].join(', ')}), and that item is what the forging tag lists.</p>` : '')
+    + `<p>Item fields offer these ${d.items.length} items and ${d.tags.length} item tags. The other ${other} items (food, blocks, ores, ...) are left out; typing one still works.</p>`
+    + `<p>Also loaded for their fields: ${d.spells.length} spells, ${d.attributes.length} attributes, ${d.schools.length} schools, ${d.effects.length} effects, ${d.sounds.length} sounds, ${d.particles.length} particles, ${d.functions.length} functions.</p>` });
+}
+const DUMP_ITEM_GROUPS = [['armor_types', 'Armour'], ['melee', 'Melee weapon'], ['spell_casting_types', 'Spell casting'],
+  ['projectile_types', 'Bow or gun'], ['shields', 'Shield'], ['curios', 'Curio']];
+function setDump(d) {
+  dump = d;
+  document.querySelectorAll('datalist[id^="dump-"]').forEach(x => x.remove());
+}
+async function loadDump() {
+  try { const x = await db(); const d = await new Promise(res => { const r = x.transaction('p').objectStore('p').get('dump'); r.onsuccess = () => res(r.result); r.onerror = () => res(null); }); if (d?.v === 2) setDump(d); } catch (e) { /* none saved */ }
+}
+
+// Raw JSON box for values the form has no widget for (text components, conditions, unknown keys).
+function raw(holder, key, f) {
+  const ta = el('textarea', { value: JSON.stringify(holder[key], null, 2) });
+  ta.onchange = () => { try { holder[key] = JSON.parse(ta.value); ta.style.borderColor = ''; changed(f); } catch (e) { ta.style.borderColor = 'var(--bad)'; ta.title = e.message; } };
+  return ta;
+}
+
+// ---------------------------------------------------------------- forgemaps (forgemap-editor.js)
+function openForgemap(path, crumb) {
+  const f = files[path];
+  ForgemapEditor.open(document.getElementById('center'), f, {
+    crumb, files, ns, path, toast, confirmBox, musicFileFor, addSong,
+    changed: f2 => { f2.dirty = true; clearTimeout(changed.t); changed.t = setTimeout(refresh, 250); },
+  });
+  refresh();
+}
+
+// A new map: one seal so it loads, and the scoring defaults the bundled maps use.
+function blankForgemap(name, tier = 0) {
+  return {
+    tier, school: 'none', weight: 1, name, total_hits: 1, approach_ms: 1500, music_track: '', music_offset_ms: 0,
+    scoring_config: {
+      perfect: 2, good: 1, miss: -2, support_hit: 2, support_miss: -1,
+      speed: { approach_multiplier: 1.0, response_window_ms: 500, weight: 0.3 },
+      scale: { action_radius_multiplier: 1.0, support_radius_multiplier: 1.0, weight: 0.2 },
+      accuracy: { perfect_window_ms: 100, good_window_ms: 200, weight: 0.5 },
+      quality_thresholds: { uncommon: 50, rare: 70, epic: 85, legendary: 95, myth: 98 },
+    },
+    notes: [{ id: 'n0', type: 'primary', spawn_time_ms: 2000, hit_window_ms: 200, position: { x: 0.5, y: 0.5 } }],
+  };
+}
+
+function musicFileFor(track) {
+  const m = typeof track === 'string' && track.match(/^([a-z0-9_.-]+):(.+)$/);
+  const p = m && `assets/${m[1]}/sounds/${m[2]}.ogg`;
+  return p && files[p] ? p : null;
+}
+
+// Puts a song into the pack's resource part: assets/<ns>/sounds/minigame/<name>.ogg plus its sounds.json entry.
+function addSong(name, bytes) {
+  const sound = `minigame/${name}`;
+  files[`assets/${ns}/sounds/${sound}.ogg`] = { raw: bytes, dirty: true, kind: null };
+  const sj = `assets/${ns}/sounds.json`;
+  let sounds = {};
+  try { if (files[sj]) sounds = JSON.parse(typeof files[sj].raw === 'string' ? files[sj].raw : new TextDecoder().decode(files[sj].raw)); } catch (e) { /* rebuilt below */ }
+  sounds[sound] = { sounds: [{ name: `${ns}:${sound}`, stream: true }] };
+  files[sj] = { raw: JSON.stringify(sounds, null, 2) + '\n', dirty: true, kind: null };
+  return `${ns}:${sound}`;
+}
+
+// ---------------------------------------------------------------- problems + export
+function refresh() {
+  problems = Object.keys(files).length ? checkPack(files) : [];
+  const errors = problems.filter(p => !p.warn).length;
+  const btn = document.getElementById('export');
+  btn.className = errors ? 'locked' : 'primary';
+  btn.textContent = errors ? `🔒 Export (${errors} error${errors > 1 ? 's' : ''})` : 'Export zip';
+  document.getElementById('packname').textContent = Object.keys(files).length ? `· ${packTitle || ns}${isDirty() ? ' · changes not exported yet' : ''}` : '';
+  document.getElementById('problems').innerHTML = '<div class="panel-title">Problems</div>' + (problems.length
+    ? problems.map((p, i) => `<div class="p ${p.warn ? 'w' : 'e'}" onclick="goTo(${i})"><b>${escapeHtml(p.file)}${p.path ? ' · ' + escapeHtml(p.path) : ''}</b>${p.warn ? '⚠' : '✕'} ${escapeHtml(p.msg)}</div>`).join('')
+    : `<div class="hint">${Object.keys(files).length ? 'No problems. The pack is ready to export.' : 'Nothing open yet.'}</div>`)
+    + '<div class="hint">Click a problem to jump to it. Red ones lock Export; yellow ones are warnings. The game also checks spell, item, effect and sound ids against what is installed, which this page cannot see.</div>';
+  renderTree();
+  markErrors();
+  clearTimeout(refresh.save); refresh.save = setTimeout(saveProject, 800);
+}
+
+function markErrors() {
+  const form = document.getElementById('form');
+  if (!form) return;
+  form.querySelectorAll('.bad').forEach(e => e.classList.remove('bad'));
+  form.querySelectorAll('.msg').forEach(e => e.remove());
+  for (const p of problems.filter(p => p.file === selected && !p.warn)) {
+    const target = fieldFor(form, p.path);
+    if (!target) continue;
+    target.classList.add('bad');
+    target.append(el('div', { className: 'msg', textContent: p.msg }));
+  }
+}
+
+function fieldFor(form, path) {
+  for (let p = path; ; p = /[.[]/.test(p) ? p.replace(/(\.[^.[\]]+|\[\d+\])$/, '') : '') {
+    const found = form.querySelector(`[data-path="${CSS.escape(p)}"]`);
+    if (found || !p) return found;
+  }
+}
+
+function goTo(i) {
+  const p = problems[i];
+  if (selected !== p.file) { rawView = false; select(p.file); }
+  if (files[p.file]?.kind === 'forgemap') return ForgemapEditor.focusPath(p.path);
+  const form = document.getElementById('form');
+  const t = form && fieldFor(form, p.path);
+  if (t) { t.scrollIntoView({ block: 'center' }); t.querySelector('input,select,textarea')?.focus(); }
+}
+
+async function exportZip() {
+  refresh();
+  const errors = problems.filter(p => !p.warn);
+  if (errors.length) return toast(`Fix the ${errors.length} red problem${errors.length > 1 ? 's' : ''} on the right before exporting.`);
+  if (!files['pack.mcmeta']) return toast('Make or import a pack first.');
+  const hasAssets = Object.keys(files).some(p => p.startsWith('assets/'));
+  const meta = files['pack.mcmeta'];
+  if (hasAssets && !meta.data.pack.supported_formats) {
+    meta.data.pack.supported_formats = [RESOURCEPACK_FORMAT, DATAPACK_FORMAT]; // one zip for both the datapacks and resourcepacks folders
+    meta.dirty = true;
+  }
+  const zip = new JSZip();
+  for (const [p, f] of Object.entries(files)) zip.file(p, textOf(f));
+  const blob = await zip.generateAsync({ type: 'blob' });
+  const a = el('a', { href: URL.createObjectURL(blob), download: `${ns}.zip` });
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  for (const f of Object.values(files)) { if (f.data !== undefined) f.raw = textOf(f); f.dirty = false; }
+  refresh();
+  toast(`Saved ${ns}.zip. Put it in your world's datapacks folder${hasAssets ? ', and in resourcepacks so players hear the music' : ''}, then run /reload.`);
+}
+
+// Splitters: .split[data-target] resizes the panel next to it; double-click folds it. Sizes are remembered.
+function layoutStore(k, v) { try { if (v === undefined) return JSON.parse(localStorage.getItem('rf-layout') || '{}')[k]; const all = JSON.parse(localStorage.getItem('rf-layout') || '{}'); all[k] = v; localStorage.setItem('rf-layout', JSON.stringify(all)); } catch (e) { /* storage blocked */ } }
+function applySplit(sp) {
+  const t = document.getElementById(sp.dataset.target); if (!t) return;
+  const saved = layoutStore(sp.dataset.target);
+  if (!saved) return;
+  t.classList.toggle('folded', !!saved.folded); sp.classList.toggle('isfolded', !!saved.folded);
+  if (saved.size) t.style[sp.classList.contains('h') ? 'height' : 'width'] = saved.size + 'px';
+}
+new MutationObserver(() => document.querySelectorAll('.split:not([data-bound])').forEach(sp => { sp.dataset.bound = 1; applySplit(sp); })).observe(document.body, { childList: true, subtree: true });
+document.querySelectorAll('.split').forEach(sp => { sp.dataset.bound = 1; applySplit(sp); });
+document.addEventListener('mousedown', e => {
+  const sp = e.target.closest('.split'); if (!sp || e.button) return;
+  const t = document.getElementById(sp.dataset.target); if (!t || t.classList.contains('folded')) return;
+  e.preventDefault();
+  const horiz = sp.classList.contains('h'), side = sp.dataset.side, min = Number(sp.dataset.min || 60);
+  const start = horiz ? e.clientY : e.clientX, size0 = horiz ? t.offsetHeight : t.offsetWidth;
+  sp.classList.add('drag');
+  const move = m => {
+    const d = (horiz ? m.clientY : m.clientX) - start;
+    const size = Math.max(min, size0 + (side === 'left' ? d : -d));
+    t.style[horiz ? 'height' : 'width'] = size + 'px';
+  };
+  const up = () => { sp.classList.remove('drag'); removeEventListener('mousemove', move); removeEventListener('mouseup', up); layoutStore(sp.dataset.target, { size: horiz ? t.offsetHeight : t.offsetWidth }); };
+  addEventListener('mousemove', move); addEventListener('mouseup', up);
+});
+document.addEventListener('dblclick', e => {
+  const sp = e.target.closest('.split'); if (!sp) return;
+  const t = document.getElementById(sp.dataset.target); if (!t) return;
+  const folded = !t.classList.contains('folded');
+  t.classList.toggle('folded', folded); sp.classList.toggle('isfolded', folded);
+  layoutStore(sp.dataset.target, { folded, size: layoutStore(sp.dataset.target)?.size });
+});
+
+// Tooltips: any element with a title shows it in a styled box after a short hover (the title moves to data-tip).
+(() => {
+  const tip = document.getElementById('tip');
+  let timer = 0, cur = null;
+  document.addEventListener('mouseover', e => {
+    const t = e.target.closest('[title],[data-tip]');
+    if (t === cur) return;
+    cur = t; clearTimeout(timer); tip.style.display = 'none';
+    if (!t) return;
+    if (t.title) { t.dataset.tip = t.title; t.removeAttribute('title'); }
+    if (!t.dataset.tip) return;
+    timer = setTimeout(() => {
+      tip.textContent = t.dataset.tip; tip.style.display = 'block';
+      const r = t.getBoundingClientRect();
+      let x = r.left, y = r.bottom + 6;
+      if (y + tip.offsetHeight > innerHeight - 8) y = r.top - tip.offsetHeight - 6;
+      tip.style.left = Math.max(8, Math.min(x, innerWidth - tip.offsetWidth - 8)) + 'px'; tip.style.top = Math.max(8, y) + 'px';
+    }, 350);
+  });
+  document.addEventListener('mousedown', () => { clearTimeout(timer); tip.style.display = 'none'; });
+})();
+
+Promise.all([loadProject(), loadDump()]).then(([sel]) => select(sel));
+</script>
+</body>
+</html>
