@@ -125,7 +125,7 @@
   <button onclick="newPackDialog()" title="Start a new pack: blank folders, or the elemental lineup for every Iron's Spells school.">New pack</button>
   <button onclick="document.getElementById('importin').click()" title="A datapack zip opens, or merges into this pack. Any other file is added to the selected folder. You can also drop files on the page.">Import</button>
   <input id="importin" type="file" hidden multiple onchange="importFiles([...this.files]); this.value=''">
-  <button id="export" class="primary" onclick="exportZip()" title="Download the pack as one zip. Locked while there are red problems.">Export zip</button>
+  <button id="export" class="primary" onclick="exportMenu(this)" title="Download the data pack and resource pack, or one mod jar. Locked while there are red problems.">Export ▾</button>
 </header>
 <main>
   <div id="tree"></div>
@@ -368,7 +368,7 @@ async function buildElemental({ difficulty, maps, songs, reuse }) {
 
 async function importFiles(list, intoFolder) {
   for (const file of list) {
-    if (/\.zip$/i.test(file.name)) await importZip(file);
+    if (/\.(zip|jar)$/i.test(file.name)) await importZip(file);
     else {
       const folder = intoFolder ?? (selected ? (files[selected] ? parentOf(selected) : selected) : '');
       const path = uniquePath((folder ? folder + '/' : '') + file.name.toLowerCase().replace(/\s+/g, '_'));
@@ -396,7 +396,7 @@ async function importZip(file) {
     if (n.startsWith(main)) rel = n.slice(main.length);
     else { const r = roots.find(r => n.startsWith(r + 'assets/')); if (r !== undefined) rel = n.slice(r.length); }
     if (!rel || (rel !== 'pack.mcmeta' && !rel.startsWith('data/') && !rel.startsWith('assets/'))) continue;
-    if (rel === 'pack.mcmeta' && !fresh) continue;
+    if (rel === 'pack.mcmeta' && (!fresh || n !== main + 'pack.mcmeta' || !names.some(x => x.startsWith(main + 'data/')))) continue; // a resource pack's pack.mcmeta never becomes the datapack's
     if (files[rel]) replaced++; else added++;
     files[rel] = { raw: TEXT_EXT.test(rel) ? await zip.file(n).async('string') : await zip.file(n).async('uint8array'), dirty: !fresh };
     classify(rel);
@@ -447,9 +447,10 @@ function renderTree() {
     for (const p of [...Object.keys(files), ...dirs]) if (parentOf(p) === dir && p !== dir) out.add(p);
     // root: pack.mcmeta, then data/, then the rest; inside folders: folders first
     const rank = p => dir === '' ? (dirs.has(p) ? (p === 'data' ? 1 : 2) : 0) : (dirs.has(p) ? 0 : 1);
-    return [...out].sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
+    // assets/ is its own resource pack, drawn as a second root below the datapack
+    return [...out].filter(p => p !== 'assets').sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
   };
-  const rows = [`<div class="row" data-folder="" ${drag('')}><span class="tw"></span>📦 ${escapeHtml(packTitle || ns)}<span class="lab">${ns}.zip</span></div>`];
+  const rows = [`<div class="row" data-folder="" ${drag('')}><span class="tw"></span>📦 ${escapeHtml(packTitle || ns)}<span class="lab">data pack · ${ns}_data.zip</span></div>`];
   const walk = (dir, depth) => {
     for (const p of kids(dir)) {
       const pad = `style="padding-left:${6 + depth * 14}px"`;
@@ -467,6 +468,13 @@ function renderTree() {
     }
   };
   walk('', 1);
+  if (dirs.has('assets')) {
+    rows.push(`<div class="row${selected === 'assets' ? ' sel' : ''}" style="margin-top:10px" data-folder="assets" ${drag('assets')}><span class="tw"></span>🎨 ${escapeHtml(packTitle || ns)} resources<span class="lab">resource pack · ${ns}_resources.zip</span></div>`);
+    rows.push(`<div class="row dim" style="padding-left:20px" title="Written on export with the resource pack format">📄 pack.mcmeta <span class="lab">made on export</span></div>`);
+    walk('assets', 1);
+  } else {
+    rows.push(`<div class="row dim" style="margin-top:10px" onclick="addResourcePack()" title="Songs, sounds, textures and lang go in a separate resource pack"><span class="tw" style="color:var(--accent)">＋</span>Add a resource pack</div>`);
+  }
   rows.push('<div class="hint" style="margin:14px 6px 4px">Right-click a folder or file for New file, New folder, Rename, Cut, Copy, Paste and Delete. Drag to move. Quick add:</div>');
   SECTIONS.forEach((s, i) => rows.push(`<div class="row" onclick="quickAdd(${i})"><span class="tw" style="color:var(--accent)">＋</span>${s.label}</div>`));
   tree.innerHTML = rows.join('');
@@ -507,10 +515,12 @@ document.getElementById('tree').addEventListener('contextmenu', e => {
     ['Import files here…', () => { const i = document.getElementById('importin'); i.onchange = () => { importFiles([...i.files], folder); i.value = ''; i.onchange = () => { importFiles([...i.files]); i.value = ''; }; }; i.click(); }],
     '-',
   ];
-  if (path !== '' && path !== 'pack.mcmeta') items.push(['Rename…', () => renamePath(path)], ['Cut', () => { clip = { mode: 'cut', path }; renderTree(); }], ['Copy', () => { clip = { mode: 'copy', path }; renderTree(); }]);
+  const root = path === '' || path === 'pack.mcmeta' || path === 'assets';
+  if (!root) items.push(['Rename…', () => renamePath(path)], ['Cut', () => { clip = { mode: 'cut', path }; renderTree(); }], ['Copy', () => { clip = { mode: 'copy', path }; renderTree(); }]);
   items.push([clip ? `Paste ${baseOf(clip.path)}` : 'Paste', () => paste(folder), !clip]);
   if (isFile && files[path].kind) items.push(['Duplicate', () => { const q = uniquePath(path); relocate(path, q, true); select(q); }]);
-  if (path !== '' && path !== 'pack.mcmeta') items.push('-', ['Delete', () => deletePath(path)]);
+  if (path === '' && !allFolders().has('assets')) items.push('-', ['Add a resource pack', addResourcePack]);
+  if (!root || path === 'assets') items.push('-', [path === 'assets' ? 'Delete resource pack' : 'Delete', () => deletePath(path)]);
   showMenu(e.clientX, e.clientY, items);
 });
 function showMenu(x, y, items) {
@@ -930,7 +940,7 @@ function refresh() {
   const errors = problems.filter(p => !p.warn).length;
   const btn = document.getElementById('export');
   btn.className = errors ? 'locked' : 'primary';
-  btn.textContent = errors ? `🔒 Export (${errors} error${errors > 1 ? 's' : ''})` : 'Export zip';
+  btn.textContent = errors ? `🔒 Export (${errors} error${errors > 1 ? 's' : ''})` : 'Export ▾';
   document.getElementById('packname').textContent = Object.keys(files).length ? `· ${packTitle || ns}${isDirty() ? ' · changes not exported yet' : ''}` : '';
   document.getElementById('problems').innerHTML = '<div class="panel-title">Problems</div>' + (problems.length
     ? problems.map((p, i) => `<div class="p ${p.warn ? 'w' : 'e'}" onclick="goTo(${i})"><b>${escapeHtml(p.file)}${p.path ? ' · ' + escapeHtml(p.path) : ''}</b>${p.warn ? '⚠' : '✕'} ${escapeHtml(p.msg)}</div>`).join('')
@@ -970,26 +980,102 @@ function goTo(i) {
   if (t) { t.scrollIntoView({ block: 'center' }); t.querySelector('input,select,textarea')?.focus(); }
 }
 
-async function exportZip() {
+function addResourcePack() {
+  if (!files['pack.mcmeta']) return newPackDialog();
+  folders.add(`assets/${ns}/sounds`);
+  select('assets');
+  toast('Added a resource pack. It exports as its own zip, next to the data pack.');
+}
+
+function exportMenu(btn) {
+  const r = btn.getBoundingClientRect();
+  showMenu(r.left, r.bottom + 4, [
+    ['Data pack + resource pack (two zips)', exportPacks],
+    ['Mod jar (plug and play, like Origin Creator)…', exportMod],
+  ]);
+}
+
+function exportReady() {
   refresh();
   const errors = problems.filter(p => !p.warn);
-  if (errors.length) return toast(`Fix the ${errors.length} red problem${errors.length > 1 ? 's' : ''} on the right before exporting.`);
-  if (!files['pack.mcmeta']) return toast('Make or import a pack first.');
-  const hasAssets = Object.keys(files).some(p => p.startsWith('assets/'));
-  const meta = files['pack.mcmeta'];
-  if (hasAssets && !meta.data.pack.supported_formats) {
-    meta.data.pack.supported_formats = [RESOURCEPACK_FORMAT, DATAPACK_FORMAT]; // one zip for both the datapacks and resourcepacks folders
-    meta.dirty = true;
-  }
+  if (errors.length) { toast(`Fix the ${errors.length} red problem${errors.length > 1 ? 's' : ''} on the right before exporting.`); return false; }
+  if (!files['pack.mcmeta']) { toast('Make or import a pack first.'); return false; }
+  return true;
+}
+const isAsset = p => p.startsWith('assets/');
+const metaJson = pack => JSON.stringify({ pack }, null, 2) + '\n';
+
+// The data pack: pack.mcmeta and data/. The resource pack: assets/ with its own pack.mcmeta.
+function buildDataZip() {
   const zip = new JSZip();
-  for (const [p, f] of Object.entries(files)) zip.file(p, textOf(f));
+  for (const [p, f] of Object.entries(files)) if (!isAsset(p)) zip.file(p, textOf(f));
+  return zip;
+}
+function buildResourceZip() {
+  const assets = Object.entries(files).filter(([p]) => isAsset(p));
+  if (!assets.length) return null;
+  const zip = new JSZip();
+  zip.file('pack.mcmeta', metaJson({ pack_format: RESOURCEPACK_FORMAT, description: `${packTitle || ns} resources` }));
+  for (const [p, f] of assets) zip.file(p, textOf(f));
+  return zip;
+}
+// A NeoForge mod with no code (lowcodefml): the game loads its data/ and assets/ like a built-in pack.
+function buildModJar({ modId, name, version, authors, description, license }) {
+  const zip = new JSZip();
+  const s = v => JSON.stringify(String(v)); // TOML basic strings take JSON escapes
+  const dep = (id, range, ordering) => `\n[[dependencies.${modId}]]\nmodId = ${s(id)}\ntype = "required"\nversionRange = ${s(range)}\nordering = ${s(ordering)}\nside = "BOTH"\n`;
+  zip.file('META-INF/neoforge.mods.toml',
+    `modLoader = "lowcodefml"\nloaderVersion = "[4,)"\nlicense = ${s(license)}\n\n[[mods]]\nmodId = ${s(modId)}\nversion = ${s(version)}\n`
+    + `displayName = ${s(name)}\nauthors = ${s(authors)}\ndescription = ${s(description)}\n`
+    + dep('neoforge', '[21.1,)', 'NONE') + dep('minecraft', '[1.21.1,1.22)', 'NONE') + dep('iss_runeforged', '[1.0.0,)', 'AFTER'));
+  zip.file('pack.mcmeta', metaJson({ pack_format: DATAPACK_FORMAT, supported_formats: [RESOURCEPACK_FORMAT, DATAPACK_FORMAT], description: name }));
+  for (const [p, f] of Object.entries(files)) if (p !== 'pack.mcmeta') zip.file(p, textOf(f));
+  return zip;
+}
+
+async function download(zip, name) {
   const blob = await zip.generateAsync({ type: 'blob' });
-  const a = el('a', { href: URL.createObjectURL(blob), download: `${ns}.zip` });
+  const a = el('a', { href: URL.createObjectURL(blob), download: name });
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+function markExported() {
   for (const f of Object.values(files)) { if (f.data !== undefined) f.raw = textOf(f); f.dirty = false; }
   refresh();
-  toast(`Saved ${ns}.zip. Put it in your world's datapacks folder${hasAssets ? ', and in resourcepacks so players hear the music' : ''}, then run /reload.`);
+}
+
+async function exportPacks() {
+  if (!exportReady()) return;
+  const res = buildResourceZip();
+  await download(buildDataZip(), `${ns}_data.zip`);
+  if (res) await download(res, `${ns}_resources.zip`);
+  markExported();
+  toast(res ? `Saved ${ns}_data.zip and ${ns}_resources.zip. The data pack goes in your world's datapacks folder (then /reload), the resource pack in resourcepacks.`
+    : `Saved ${ns}_data.zip. Put it in your world's datapacks folder, then run /reload.`);
+}
+
+async function exportMod() {
+  if (!exportReady()) return;
+  const id = ns.toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/^[^a-z]+/, '');
+  const v = await dialog({
+    title: 'Export as a mod jar', ok: 'Export jar',
+    fields: [
+      { key: 'modId', label: 'Mod id', value: id.length >= 2 ? id : 'my_pack', note: 'Lowercase letters, digits and _; starts with a letter.' },
+      { key: 'name', label: 'Name', value: packTitle || ns },
+      { key: 'version', label: 'Version', value: '1.0.0' },
+      { key: 'authors', label: 'Author', value: '' },
+      { key: 'description', label: 'Description', value: files['pack.mcmeta']?.data?.pack?.description ?? '' },
+      { key: 'license', label: 'License', value: 'All Rights Reserved' },
+    ],
+    note: 'One jar holds the data pack and the resource pack. Drop it in the mods folder; it needs Runeforged and works in every world, no /reload.',
+    check: v => !/^[a-z][a-z0-9_]{1,63}$/.test(v.modId) ? 'The mod id must be 2 to 64 lowercase letters, digits or _, starting with a letter.'
+      : ['iss_runeforged', 'minecraft', 'neoforge', 'irons_spellbooks'].includes(v.modId) ? 'Pick your own mod id.'
+      : !v.version ? 'Give it a version.' : !v.license ? 'Give it a license.' : '',
+  });
+  if (!v) return;
+  await download(buildModJar(v), `${v.modId}-${v.version}.jar`);
+  markExported();
+  toast(`Saved ${v.modId}-${v.version}.jar. Put it in the mods folder next to Runeforged.`);
 }
 
 // Splitters: .split[data-target] resizes the panel next to it; double-click folds it. Sizes are remembered.
