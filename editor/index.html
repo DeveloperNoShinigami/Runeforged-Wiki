@@ -417,7 +417,15 @@ document.addEventListener('drop', e => { document.body.classList.remove('draggin
 
 // Autosave the whole project (music included) in this browser's IndexedDB.
 function db() { return new Promise((res, rej) => { const r = indexedDB.open('runeforged-pack-editor', 1); r.onupgradeneeded = () => r.result.createObjectStore('p'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); }
+// A fresh tab opens on the start screen; the saved pack waits in `savedPack` until Continue.
+// Reloads and returning to the same tab restore it directly (sessionStorage flag).
+let savedPack = null;
+const tabFlag = { get: () => { try { return sessionStorage.getItem('rf-open') === '1'; } catch (e) { return false; } }, set: () => { try { sessionStorage.setItem('rf-open', '1'); } catch (e) {} } };
 async function saveProject() {
+  const empty = !Object.keys(files).length;
+  if (savedPack && empty) return; // start screen: don't overwrite the saved pack
+  savedPack = null;
+  if (!empty) tabFlag.set();
   try { const d = await db(); d.transaction('p', 'readwrite').objectStore('p').put({ files, folders: [...folders], ns, packTitle, selected }, 'current'); } catch (e) { /* storage blocked: the editor still works, it just won't restore */ }
 }
 async function loadProject() {
@@ -425,6 +433,7 @@ async function loadProject() {
     const d = await db();
     const v = await new Promise(res => { const r = d.transaction('p').objectStore('p').get('current'); r.onsuccess = () => res(r.result); r.onerror = () => res(null); });
     if (v && Object.keys(v.files).length) {
+      if (!tabFlag.get()) { savedPack = v; return null; }
       files = v.files; folders = new Set(v.folders); ns = v.ns; packTitle = v.packTitle;
       for (const f of Object.values(files)) if (f.kind === 'forgemap' && f.data && ForgemapEditor.fromTicks(f)) f.dirty = true;
       return v.selected;
@@ -437,7 +446,8 @@ async function loadProject() {
 function renderTree() {
   const tree = document.getElementById('tree');
   if (!Object.keys(files).length && !folders.size) {
-    tree.innerHTML = '<div class="hint" style="padding:6px">No pack open.<br><br><button onclick="newPackDialog()">New pack</button> or drop a datapack zip anywhere on the page.</div>';
+    const last = savedPack ? `<br><br><button class="primary" onclick="continueSaved()" title="Reopen the pack you last worked on in this browser.">Continue “${escapeHtml(savedPack.packTitle || savedPack.ns)}”</button>` : '';
+    tree.innerHTML = `<div class="hint" style="padding:6px">No pack open.<br><br><button onclick="newPackDialog()">New pack</button> or <button onclick="document.getElementById('importin').click()">Import</button>, or drop a datapack zip anywhere on the page.${last}</div>`;
     return;
   }
   const errFiles = new Set(problems.filter(p => !p.warn).map(p => p.file));
@@ -1135,6 +1145,7 @@ document.addEventListener('dblclick', e => {
 })();
 
 Promise.all([loadProject(), loadDump()]).then(([sel]) => select(sel));
+async function continueSaved() { tabFlag.set(); savedPack = null; select(await loadProject()); }
 </script>
 </body>
 </html>
