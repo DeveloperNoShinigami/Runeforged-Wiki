@@ -12,14 +12,7 @@
 </head>
 <body>
 <header class="hero">
-  <svg class="circle" viewBox="0 0 400 400" aria-hidden="true">
-    <defs><path id="ring" d="M200,200 m-160,0 a160,160 0 1,1 320,0 a160,160 0 1,1 -320,0"/>
-    <path id="ring2" d="M200,200 m-118,0 a118,118 0 1,1 236,0 a118,118 0 1,1 -236,0"/></defs>
-    <circle cx="200" cy="200" r="182"/><circle cx="200" cy="200" r="138"/><circle cx="200" cy="200" r="98"/>
-    <text><textPath href="#ring">ᚱᚢᚾᛖᚠᛟᚱᚷᛖᛞ ᛫ ᚺᚨᛗᛗᛖᚱ ᚨᚾᛞ ᚨᚾᚹᛁᛚ ᛫ ᛋᛖᚨᛚ ᚨᚾᛞ ᛋᛈᛁᚱᛁᛏ ᛫ ᚠᛟᚱᚷᛖ ᚨᚾᛞ ᚨᚹᚨᚲᛖᚾ ᛫</textPath></text>
-    <text class="inner"><textPath href="#ring2">ᛖᚷᛟ ᛫ ᛗᚨᚾᚢᛋᚲᚱᛁᛈᛏ ᛫ ᚱᛖᚠᛁᚾᛖ ᛫ ᛗᚨᛋᛏᛖᚱᚤ ᛫ ᛋᚲᚺᛟᛟᛚ ᛫</textPath></text>
-    <polygon points="200,112 276,244 124,244"/><polygon points="200,288 124,156 276,156"/>
-  </svg>
+  <img class="circle" src="img/seal_gold.png" alt="">
   <div class="hero-text">
     <img class="hero-icon" src="img/runic_hammer.png" alt="">
     <h1>Runeforged</h1>
@@ -32,7 +25,7 @@
   <a href="#install">Install</a>
   <a href="#path">The Path</a>
   <a href="#controls">Controls</a>
-  <a href="#editor">Pack Editor</a>
+  <a href="pack-editor.html">Pack Editor</a>
   <a href="#packs">Servers</a>
   <a href="#future">Coming Next</a>
   <a href="#changelog">Changelog</a>
@@ -263,22 +256,8 @@
 <section id="editor">
   <h2><span class="r">ᛞ</span> Pack Editor</h2>
   <div class="card">
-    <p>The <a href="editor/">Pack Editor</a> runs in your browser and builds a whole Runeforged pack. Nothing to install. Your work is saved in the browser.</p>
-    <ol>
-      <li><b>New pack</b>: give it a name. Start <b>Blank</b>, or from the <b>Elemental lineup</b> (the Default Pack's configs to change).</li>
-      <li>Add what you want from the list on the left. Each file opens as a form.</li>
-      <li>Fix any red problems on the right; they lock Export.</li>
-      <li><b>Export ▾</b> → <b>Mod jar</b>, then drop it in <code>mods</code>. Or export a data pack + resource pack pair.</li>
-    </ol>
-    <table>
-      <tr><td>Awakening configs</td><td>What a school does when Runic Awakening wakes a weapon, armour, shield or focus: cost, duration, cooldown, and the effects on hit, kill, cast or block. One per school and behaviour; yours replaces the Default Pack's.</td></tr>
-      <tr><td>Forgemaps</td><td>The anvil minigame charts for Rune Forging, Catch the Rune and Runic Lanes, per hammer tier and school. Load a song and the editor finds its beats.</td></tr>
-      <tr><td>Forging tags</td><td>Which items can be runeforged, and as what: melee, projectile, spell casting, shield, armour or curio.</td></tr>
-      <tr><td>Item tuning</td><td>Per-item stats a forged item gains, for one item or a group.</td></tr>
-      <tr><td>Abracadabra spells</td><td>Which spells the Abracadabra enchantment can cast, and on whom.</td></tr>
-      <tr><td>Songs and icons</td><td>Go in the resource half of the pack (<code>assets/</code>).</td></tr>
-    </table>
-    <p class="note">In game, <code>/runeforged dump</code> writes every item, spell and school id in your modpack to a zip. Import it and the editor's id fields offer exactly what you have installed.</p>
+    <p>The <a href="editor/">Pack Editor</a> runs in your browser and builds a whole Runeforged pack: awakenings, forgemaps, forging tags, item tuning, Abracadabra spells, songs and icons. Export it as a mod jar and drop it in <code>mods</code>.</p>
+    <p><a href="pack-editor.html"><b>Read the Pack Editor guide →</b></a> Every screen, every file type, every field and its rules.</p>
   </div>
 </section>
 

@@ -21,7 +21,7 @@ h1, h2, h3, h4 { font-family: Cinzel, serif; color: var(--gold); margin: 0 0 .5e
 .r { font-family: "Segoe UI Historic", "Noto Sans Runic", serif; color: var(--gold-soft); }
 
 .hero { position: relative; display: grid; place-items: center; min-height: 460px; overflow: hidden; padding: 40px 16px; }
-.circle { position: absolute; width: min(560px, 120vw); opacity: .5; animation: spin 120s linear infinite; }
+.circle { position: absolute; width: min(560px, 120vw); opacity: .32; animation: spin 120s linear infinite; }
 .circle circle, .circle polygon { fill: none; stroke: var(--gold-soft); stroke-width: 1.2; }
 .circle text { fill: var(--gold); font-size: 21px; letter-spacing: 3px; font-family: "Segoe UI Historic", "Noto Sans Runic", serif; }
 .circle text.inner { font-size: 16px; }
@@ -80,6 +80,18 @@ details summary:hover { text-shadow: 0 0 8px var(--gold); }
 details img { display: block; width: 100%; margin-top: 8px; border: 1px solid var(--line); border-radius: 4px; image-rendering: auto; }
 details.card { margin-top: 0; }
 .future { display: flex; gap: 18px; align-items: center; border-color: var(--gold-soft); box-shadow: 0 0 24px var(--glow) inset; }
+
+.hero.small { min-height: 340px; }
+.hero.small .circle { width: min(420px, 100vw); }
+.btn { display: inline-block; margin: 4px; padding: 4px 14px; border: 1px solid var(--gold-soft); border-radius: 99px; text-decoration: none; font-family: Cinzel, serif; background: var(--panel); }
+.btn:hover { box-shadow: 0 0 12px var(--glow); }
+.req { color: #ff8a6b; font-weight: 700; }
+h3 { margin-top: 1.2em; }
+table.card { display: table; padding: 0; overflow: hidden; }
+.schema td:nth-child(2):not(:last-child) { color: var(--muted); }
+.schema td:first-child { white-space: normal; }
+pre { margin: 8px 0 0; overflow-x: auto; }
+pre code { display: block; padding: 10px; border: 0; font-size: .82rem; line-height: 1.45; }
 
 footer { text-align: center; padding: 48px 16px; color: var(--muted); font-size: .85rem; border-top: 1px solid var(--line); margin-top: 48px; }
 footer .r { font-size: 1.4rem; letter-spacing: .3em; }

@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Runeforged Pack Editor</title>
+<meta name="description" content="The Runeforged Pack Editor: every screen, file type, field and rule.">
+<link rel="icon" href="img/runesmith_rune.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero small">
+  <img class="circle" src="img/seal_gold.png" alt="">
+  <div class="hero-text">
+    <h1>Pack Editor</h1>
+    <p class="tag">Build a whole Runeforged pack in your browser. Every file type, every field, every rule.</p>
+    <p class="badges"><a class="btn" href="editor/">Open the editor</a><a class="btn" href="index.html">← Wiki</a></p>
+  </div>
+</header>
+
+<nav class="toc" aria-label="Contents">
+  <a href="#start">Start</a>
+  <a href="#window">The Window</a>
+  <a href="#ids">Your Ids</a>
+  <a href="#export">Export</a>
+  <a href="#awakening">Awakening</a>
+  <a href="#forgemaps">Forgemaps</a>
+  <a href="#tags">Forging Tags</a>
+  <a href="#tuning">Item Tuning</a>
+  <a href="#abracadabra">Abracadabra</a>
+  <a href="#resources">Resources</a>
+  <a href="#notation">Value Types</a>
+</nav>
+
+<main>
+<section id="start">
+  <h2><span class="r">ᚠ</span> How Packs Work</h2>
+  <p>Runeforged is the engine. Everything it forges, plays and awakens comes from packs. The <b>Runeforged Default Pack</b> installs with the mod and holds the full set. Your pack loads after it, so your files win.</p>
+  <div class="card">
+    <ol>
+      <li><b>New pack</b>: give it a name, a namespace (lower case, such as <code>my_pack</code>) and a Minecraft version.</li>
+      <li><b>Start from</b>:
+        <ul>
+          <li><b>Blank</b>: empty folders. You can add a music folder and the Abracadabra file.</li>
+          <li><b>Elemental lineup</b>: a copy of the Default Pack's awakening configs for the 8 Iron's Spells schools, plus its forging tags, ready to change. A second window picks the forgemap <b>difficulty</b> (Novice to God of Runesmithing) and either <b>From my songs</b> (drop <code>.ogg</code> files; each school gets one map per tier for all three minigames, built on the song's beats) or <b>Empty</b>.</li>
+        </ul></li>
+      <li>Add files from the tree on the left. Each file opens as a form.</li>
+      <li>Fix the red problems on the right. They lock Export.</li>
+      <li><b>Export ▾ → Mod jar</b>, then drop the jar in <code>mods</code>.</li>
+    </ol>
+    <p class="note">Your work is saved in the browser as you go and comes back when you reopen the page.</p>
+  </div>
+</section>
+
+<section id="window">
+  <h2><span class="r">ᚢ</span> The Window</h2>
+  <div class="cols">
+    <div class="card"><h4>Tree (left)</h4>
+      <p>Two packs. The <b>data pack</b> holds <code>pack.mcmeta</code> and <code>data/</code>. The <b>resource pack</b> holds <code>assets/</code> (songs, sounds, textures, lang). A label beside each folder names its type.</p>
+      <p><b>Add a resource pack</b> sits below the tree, or right-click the data pack.</p>
+    </div>
+    <div class="card"><h4>Files and folders</h4>
+      <p>Right-click for New file, New folder, Import files here, Rename, Cut, Copy, Paste, Duplicate and Delete. Drag to move.</p>
+      <p>A file's type follows its folder, so moving a file changes which editor opens it.</p>
+    </div>
+  </div>
+  <div class="cols" style="margin-top:16px">
+    <div class="card"><h4>Editors (middle)</h4>
+      <p>Awakening configs, item tuning, Abracadabra and item tags open as forms with a <b>Raw JSON</b> toggle. Forgemaps open the chart editor. Other text files open as plain text; images and sounds are kept as they are.</p>
+    </div>
+    <div class="card"><h4>Problems (right)</h4>
+      <p>Live checks that match the game's loader. Click a problem to jump to its field or note. Red problems lock Export. The game also checks ids against what is installed, which the page can't see, so ids are only checked for shape.</p>
+    </div>
+  </div>
+  <p class="note">Drag a panel's edge to resize it; double-click the edge to fold it. Hover any field or button for a tooltip. <b>Import</b> (or drop a file on the page) opens a pack zip or mod jar, or merges it into the open pack (same-path files are replaced). Any other file goes into the selected folder.</p>
+</section>
+
+<section id="ids">
+  <h2><span class="r">ᚦ</span> Ids From Your Game</h2>
+  <div class="card">
+    <p>In game, with cheats or op, run <code>/runeforged dump</code>. It writes <code>runeforged/editor_dump.zip</code> in the game folder (click the path in chat to open it). Import that zip in the editor.</p>
+    <p>The zip lists every item, item tag, spell, school, attribute, effect, sound, simple particle, enchantment and function in your modpack. A summary shows how many items of each kind are <b>forgeable</b> and how many <b>can be made forgeable</b>. Item fields then offer only gear, forgeable items first. Typed ids that aren't listed still work.</p>
+  </div>
+</section>
+
+<section id="export">
+  <h2><span class="r">ᚨ</span> Export</h2>
+  <table class="card">
+    <tr><td>Mod jar</td><td>One plug-and-play jar holding both packs. It asks for a mod id, name, version, author, description and license. Drop it in <code>mods</code>; it loads in every world with no <code>/reload</code>, after the Default Pack. Import reads the jar back.</td></tr>
+    <tr><td>Data pack + resource pack</td><td><code>&lt;ns&gt;_data.zip</code> for a world's <code>datapacks</code> folder, and <code>&lt;ns&gt;_resources.zip</code> for <code>resourcepacks</code> (only when the pack has one). A global datapack mod such as Global Packs can load them in every world.</td></tr>
+  </table>
+  <p class="note">Empty folders are not exported. Every exported file needs <code>pack.mcmeta</code>: <code>pack_format</code> (48 for data, 34 for resources on 1.21.1) and a <code>description</code>.</p>
+</section>
+
+<section id="replacing">
+  <h2><span class="r">ᚱ</span> Replacing The Default Pack</h2>
+  <div class="card">
+    <ul>
+      <li><b>Awakening configs</b>: one per school and behaviour. Yours replaces the Default Pack's for the same school and behaviour, whatever its file name. Two of your own files for the same pair is an error.</li>
+      <li><b>Forgemaps</b>: maps add to the pool. To replace one, use the same path: <code>data/iss_runeforged/forgemaps/&lt;name&gt;.json</code>.</li>
+      <li><b>Tags</b>: entries merge with the Default Pack's. <code>"replace": true</code> throws the lower ones away.</li>
+      <li><b>Abracadabra</b>: rules merge. <code>"replace": true</code> drops every rule from lower packs.</li>
+      <li><b>Item tuning</b>: one item may be in only one tuning file.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="awakening">
+  <h2><span class="r">ᚲ</span> Awakening Configs</h2>
+  <p class="lead">What a school does when Runic Awakening wakes a forged item. Path: <code>data/&lt;ns&gt;/awakening_configs/&lt;school&gt;/&lt;behavior&gt;.json</code>.</p>
+
+  <h3>Top level</h3>
+  <table class="card schema">
+    <tr><th>Field</th><th>Type</th><th>Meaning</th></tr>
+    <tr><td>school <b class="req">*</b></td><td>id</td><td>Full school id, such as <code>irons_spellbooks:fire</code> or <code>iss_runeforged:runesmith</code>.</td></tr>
+    <tr><td>behavior <b class="req">*</b></td><td>enum</td><td>Which forged items this covers: <code>melee</code>, <code>projectile</code>, <code>spell_casting</code>, <code>shield</code>, <code>armor</code>, <code>curio</code>.</td></tr>
+    <tr><td>matching_rune <b class="req">*</b></td><td>id</td><td>Rune item that pays for activation, such as <code>irons_spellbooks:fire_rune</code>.</td></tr>
+    <tr><td>activation <b class="req">*</b></td><td>object</td><td>Cost, duration and cooldown. See below.</td></tr>
+    <tr><td>triggers <b class="req">*</b></td><td>list</td><td>At least one trigger: an event and the actions it runs.</td></tr>
+    <tr><td>conditions</td><td>object</td><td><code>required_item_tags</code>: the forged item must be in every tag listed.</td></tr>
+    <tr><td>display <b class="req">*</b></td><td>object</td><td>Text and icon on the awakening screen. See below.</td></tr>
+  </table>
+
+  <h3>activation</h3>
+  <table class="card schema">
+    <tr><th>Field</th><th>Type</th><th>Meaning</th></tr>
+    <tr><td>mana_cost <b class="req">*</b></td><td>int ≥ 0</td><td>Mana paid when awakening starts.</td></tr>
+    <tr><td>mana_cost_per_tick</td><td>int ≥ 0</td><td>Mana drained every tick while awake. Default 0.</td></tr>
+    <tr><td>health_cost</td><td>number ≥ 0</td><td>Health paid when awakening starts. Default 0.</td></tr>
+    <tr><td>consume_offhand_rune <b class="req">*</b></td><td>bool</td><td>true uses up the matching rune held in the off hand.</td></tr>
+    <tr><td>duration_ticks <b class="req">*</b></td><td>int &gt; 0</td><td>How long it stays awake. 20 ticks = 1 second.</td></tr>
+    <tr><td>cooldown_ticks <b class="req">*</b></td><td>int ≥ 0</td><td>Wait before it can wake again.</td></tr>
+  </table>
+
+  <h3>Events and who can be hit</h3>
+  <table class="card schema">
+    <tr><th>event</th><th>When</th><th>Allowed targets</th></tr>
+    <tr><td>on_activate</td><td>Awakening starts</td><td>self</td></tr>
+    <tr><td>on_deactivate</td><td>Awakening ends</td><td>self</td></tr>
+    <tr><td>on_hit</td><td>You hit an enemy</td><td>self, target, attacker</td></tr>
+    <tr><td>on_kill</td><td>You kill an enemy</td><td>self, target, attacker</td></tr>
+    <tr><td>on_cast</td><td>You cast a spell</td><td>self, attacker</td></tr>
+    <tr><td>on_damage_taken</td><td>You are hurt</td><td>self, attacker</td></tr>
+    <tr><td>on_block</td><td>Your shield blocks</td><td>self, attacker</td></tr>
+  </table>
+  <p class="note"><code>target</code> is the enemy you hit or killed, <code>attacker</code> is whoever hurt you, <code>self</code> is you. An action's <code>target</code> defaults to <code>target</code>, so on <code>on_cast</code>, <code>on_damage_taken</code> and <code>on_block</code> set it yourself. Applies to actions that hit a living thing: apply_effect, apply_knockback, bonus_school_damage, cast_spell, ignite, spell_bleed.</p>
+
+  <h3>Actions</h3>
+  <p>Each action has a <code>type</code> and its own fields. Fields not marked <b class="req">*</b> are optional; the default is in brackets.</p>
+  <table class="card schema">
+    <tr><th>type</th><th>Fields</th><th>Does</th></tr>
+    <tr><td>apply_effect</td><td><code>effect</code><b class="req">*</b> id, <code>duration_ticks</code> &gt; 0 [100], <code>amplifier</code> 0–255 [0], <code>target</code></td><td>Gives a potion effect. Amplifier 0 = level I.</td></tr>
+    <tr><td>bonus_school_damage</td><td><code>amount</code> &gt; 0, <code>additional_hits</code> 1–20 [1], <code>target</code></td><td>Extra damage of the item's school. Without <code>amount</code> it deals 15% of the hit (at least 0.5).</td></tr>
+    <tr><td>apply_knockback</td><td><code>strength</code> ≥ 0 [0.4], <code>target</code></td><td>Pushes the target away.</td></tr>
+    <tr><td>ignite</td><td><code>seconds</code><b class="req">*</b> 0–600, <code>target</code></td><td>Sets the target on fire.</td></tr>
+    <tr><td>spell_bleed</td><td><code>percent_max_hp</code><b class="req">*</b> 0–1, <code>seconds</code><b class="req">*</b> 0–600, <code>max_stacks</code> 1–100 [1], <code>max_damage_per_tick</code> &gt; 0, <code>target</code></td><td>Bleeds a fraction of max health each second, per stack. <code>max_damage_per_tick</code> caps it.</td></tr>
+    <tr><td>cast_spell</td><td><code>spell</code><b class="req">*</b> id, <code>spell_level</code> ≥ 1 [1], <code>target</code></td><td>Casts a spell, such as <code>irons_spellbooks:firebolt</code>.</td></tr>
+    <tr><td>apply_attribute</td><td><code>attribute</code><b class="req">*</b> id, <code>amount</code><b class="req">*</b> not 0</td><td>Adds to an attribute while awake. Only on <code>on_activate</code>; removed when awakening ends.</td></tr>
+    <tr><td>mana_vampirism</td><td><code>percent</code><b class="req">*</b> 0–1</td><td>Gives back this fraction of damage as mana.</td></tr>
+    <tr><td>spell_vamp</td><td><code>percent</code><b class="req">*</b> 0–1</td><td>Heals this fraction of the damage dealt.</td></tr>
+    <tr><td>particle_effect</td><td><code>particle</code><b class="req">*</b> id, <code>count</code> 1–1000 [10], <code>speed</code> ≥ 0 [0.02], <code>target</code></td><td>Shows particles. Only simple particles (no extra options).</td></tr>
+    <tr><td>play_sound</td><td><code>sound</code><b class="req">*</b> id, <code>volume</code> &gt; 0 [1], <code>pitch</code> 0–2 [1], <code>sound_source</code>, <code>target</code></td><td>Plays a sound. <code>sound_source</code>: master, music, record, weather, block, hostile, neutral, player, ambient, voice.</td></tr>
+    <tr><td>run_command</td><td><code>command</code><b class="req">*</b> text</td><td>Runs a command as the player, with op level 2.</td></tr>
+    <tr><td>run_function</td><td><code>function</code><b class="req">*</b> id</td><td>Runs a datapack function, such as <code>my_pack:awaken</code>.</td></tr>
+  </table>
+
+  <h3>The <code>if</code> block</h3>
+  <p>Any action can carry <code>"if": { ... }</code>. It runs only when every check passes.</p>
+  <table class="card schema">
+    <tr><td>target_has_effect / target_lacks_effect</td><td>effect id</td></tr>
+    <tr><td>target_burning</td><td>true or false</td></tr>
+    <tr><td>target_in_tag / target_not_in_tag</td><td>entity type tag, such as <code>minecraft:undead</code></td></tr>
+    <tr><td>self_has_effect</td><td>effect id</td></tr>
+    <tr><td>chance</td><td>more than 0, at most 1. 0.25 = 25%.</td></tr>
+  </table>
+
+  <h3>display</h3>
+  <table class="card schema">
+    <tr><td>title <b class="req">*</b></td><td>Name on the awakening screen.</td></tr>
+    <tr><td>description_active <b class="req">*</b></td><td>Shown while awake.</td></tr>
+    <tr><td>description_inactive <b class="req">*</b></td><td>Shown while asleep.</td></tr>
+    <tr><td>icon</td><td>Texture path, such as <code>iss_runeforged:textures/gui/fire/fire_awakening.png</code>. Put the image in your resource pack.</td></tr>
+  </table>
+
+  <details class="card"><summary>Example: the Default Pack's fire melee</summary>
+<pre><code>{
+  "school": "irons_spellbooks:fire",
+  "behavior": "melee",
+  "matching_rune": "irons_spellbooks:fire_rune",
+  "activation": { "mana_cost": 55, "consume_offhand_rune": true,
+                  "duration_ticks": 300, "cooldown_ticks": 400 },
+  "triggers": [
+    { "event": "on_activate", "actions": [
+        { "type": "play_sound", "sound": "minecraft:item.firecharge.use", "sound_source": "player" },
+        { "type": "particle_effect", "particle": "minecraft:flame", "count": 20 } ] },
+    { "event": "on_hit", "actions": [
+        { "type": "ignite", "seconds": 4 },
+        { "type": "bonus_school_damage", "amount": 4 },
+        { "type": "bonus_school_damage", "amount": 6, "if": { "target_burning": true } } ] }
+  ],
+  "display": {
+    "title": "Fire Awakening",
+    "description_active": "Hits ignite. Burning foes take extra fire damage.",
+    "description_inactive": "Press the awakening key to awaken the fire runes.",
+    "icon": "iss_runeforged:textures/gui/fire/fire_awakening.png"
+  }
+}</code></pre>
+  </details>
+</section>
+
+<section id="forgemaps">
+  <h2><span class="r">ᚷ</span> Forgemaps</h2>
+  <p class="lead">The anvil minigame charts. Path: <code>data/&lt;ns&gt;/forgemaps/&lt;name&gt;.json</code>. The anvil picks a map for the hammer's tier and the item's school; maps for that exact school come first, then maps with school <code>none</code>. Several matches are picked at random by <code>weight</code>.</p>
+
+  <h3>The chart editor</h3>
+  <div class="card">
+    <ul>
+      <li>Click to place a note, drag to move it or to set a slider's or hold's length. Right-click or Delete removes it.</li>
+      <li>Mouse wheel scrubs; Ctrl+wheel zooms the vertical charts. Space plays. Ctrl+Z / Ctrl+Y undo and redo.</li>
+      <li><b>Song</b> loads an <code>.ogg</code> into <code>assets/</code>, adds its <code>sounds.json</code> entry, sets the map's <code>music_track</code>, draws its waveform and sets the BPM from its beats. BPM and snap stay in the editor; they are not exported.</li>
+      <li>In Catch the Rune, drops are blue when reachable, amber when they need a dash and red when they can't be reached.</li>
+    </ul>
+  </div>
+
+  <h3>Top level</h3>
+  <table class="card schema">
+    <tr><th>Field</th><th>Type</th><th>Meaning</th></tr>
+    <tr><td>tier <b class="req">*</b></td><td>int 0–4</td><td>Hammer mastery tier: Novice, Adept, Expert, Master, Grandmaster.</td></tr>
+    <tr><td>school <b class="req">*</b></td><td>text</td><td><code>none</code> or a full school id such as <code>irons_spellbooks:fire</code>.</td></tr>
+    <tr><td>name <b class="req">*</b></td><td>text</td><td>Shown in game. Not blank.</td></tr>
+    <tr><td>mode</td><td>enum</td><td><code>standard</code> (Rune Forging, default), <code>catch</code> (Catch the Rune), <code>lanes</code> (Runic Lanes).</td></tr>
+    <tr><td>total_hits <b class="req">*</b></td><td>int</td><td>Must equal the judged notes: standard = primary + 2 × slider; catch = drops; lanes = tap + 2 × hold. Support notes don't count.</td></tr>
+    <tr><td>approach_ms <b class="req">*</b></td><td>int &gt; 0</td><td>How long a note takes to arrive, in milliseconds.</td></tr>
+    <tr><td>notes <b class="req">*</b></td><td>list</td><td>At least one judged note, sorted by time.</td></tr>
+    <tr><td>music_track</td><td>id</td><td>Sound event of the song, such as <code>my_pack:minigame/my_song</code>. Blank plays silently.</td></tr>
+    <tr><td>music_offset_ms</td><td>int ≥ 0</td><td>Shifts the music. Doesn't change scoring.</td></tr>
+    <tr><td>weight</td><td>int 1–1000</td><td>Chance against other maps for the same tier and school. Default 1.</td></tr>
+    <tr><td>catch</td><td>object</td><td>Catch the Rune only: <code>bar_width</code> 0.05–0.9, <code>bar_speed</code> 0.1–4, <code>dash_multiplier</code> 1–4.</td></tr>
+    <tr><td>scoring_config <b class="req">*</b></td><td>object</td><td>Points and grade thresholds. See below.</td></tr>
+  </table>
+
+  <h3>Notes</h3>
+  <table class="card schema">
+    <tr><th>Field</th><th>Type</th><th>Meaning</th></tr>
+    <tr><td>id <b class="req">*</b></td><td>text</td><td>Unique in the map.</td></tr>
+    <tr><td>type <b class="req">*</b></td><td>enum</td><td>standard: <code>primary</code>, <code>support</code>, <code>slider</code>. catch: <code>drop</code>, <code>support</code>. lanes: <code>tap</code>, <code>hold</code>.</td></tr>
+    <tr><td>spawn_time_ms <b class="req">*</b></td><td>int ≥ 0</td><td>When the note is hit. Never earlier than the note before it.</td></tr>
+    <tr><td>hit_window_ms <b class="req">*</b></td><td>int &gt; 0</td><td>How long the note can be hit.</td></tr>
+    <tr><td>position</td><td>{x, y}</td><td>0.0–1.0 across the board. Needed outside lanes mode; y defaults to 0.5.</td></tr>
+    <tr><td>slider_end</td><td>{x, y}</td><td>Sliders only, required. Where the slider ends.</td></tr>
+    <tr><td>slider_duration_ms</td><td>int &gt; 0</td><td>Sliders only, required. Travel time start to end.</td></tr>
+    <tr><td>slider_path_points</td><td>list of {x, y}</td><td>Sliders only. Curve points, at most 256.</td></tr>
+    <tr><td>lane</td><td>int 0–3</td><td>Lanes mode only, required there. Notes in one lane must not overlap.</td></tr>
+    <tr><td>hold_ms</td><td>int &gt; 0</td><td>Hold notes only, required there.</td></tr>
+  </table>
+
+  <h3>scoring_config</h3>
+  <table class="card schema">
+    <tr><td>perfect, good, miss, support_hit <b class="req">*</b></td><td>Whole-number points for each result.</td></tr>
+    <tr><td>support_miss <b class="req">*</b></td><td>Points for a missed support note (a number).</td></tr>
+    <tr><td>speed <b class="req">*</b></td><td><code>approach_multiplier</code> 0.1–4 (scales <code>approach_ms</code>), <code>response_window_ms</code> 1–5000, <code>weight</code> 0–1.</td></tr>
+    <tr><td>scale <b class="req">*</b></td><td><code>action_radius_multiplier</code> and <code>support_radius_multiplier</code> 0.25–2 (note sizes), <code>weight</code> 0–1.</td></tr>
+    <tr><td>accuracy <b class="req">*</b></td><td><code>perfect_window_ms</code> and <code>good_window_ms</code> 1–5000 (perfect ≤ good), <code>weight</code> 0–1.</td></tr>
+    <tr><td>quality_thresholds <b class="req">*</b></td><td><code>uncommon</code>, <code>rare</code>, <code>epic</code>, <code>legendary</code>, <code>myth</code>: score 0–100 needed for each grade, ascending.</td></tr>
+  </table>
+  <p class="note">The speed, scale and accuracy weights must add up to 1.0. Times are always milliseconds; the old <code>_ticks</code> keys are rejected.</p>
+</section>
+
+<section id="tags">
+  <h2><span class="r">ᚹ</span> Forging Tags</h2>
+  <p class="lead">Which items the anvil can forge, and as what. Path: <code>data/iss_runeforged/tags/item/runeforgeable/&lt;name&gt;.json</code>. Entries merge with the Default Pack's.</p>
+  <table class="card schema">
+    <tr><th>Tag</th><th>Forges as</th></tr>
+    <tr><td>runeforgeable/melee</td><td>Swords, axes and other melee weapons</td></tr>
+    <tr><td>runeforgeable/projectile_types</td><td>Bows, crossbows and guns</td></tr>
+    <tr><td>runeforgeable/spell_casting_types</td><td>Staffs, wands and spell books</td></tr>
+    <tr><td>runeforgeable/shields</td><td>Shields</td></tr>
+    <tr><td>runeforgeable/armor_types</td><td>Armour pieces</td></tr>
+    <tr><td>runeforgeable/curios</td><td>Rings, charms and other curios</td></tr>
+    <tr><td>runeforgeable/behaviors</td><td>All of the above combined. Leave it as it is.</td></tr>
+    <tr><td>runeforge_blacklist</td><td>Items that can never be forged, even when another tag lists them.</td></tr>
+  </table>
+  <table class="card schema">
+    <tr><th>Field</th><th>Type</th><th>Meaning</th></tr>
+    <tr><td>values <b class="req">*</b></td><td>list</td><td>Item ids, <code>#tags</code>, or <code>{"id": "...", "required": false}</code> for items from mods that may not be installed.</td></tr>
+    <tr><td>replace</td><td>bool</td><td>true drops the entries from lower packs.</td></tr>
+  </table>
+</section>
+
+<section id="tuning">
+  <h2><span class="r">ᚺ</span> Item Tuning</h2>
+  <p class="lead">Limits which attributes Runic Manuscripts can add to an item. Path: <code>data/&lt;ns&gt;/runeforge_item_tuning/&lt;name&gt;.json</code>. The form asks whether it tunes <b>one item</b> or <b>a group</b>; the file is the same either way.</p>
+  <table class="card schema">
+    <tr><th>Field</th><th>Type</th><th>Meaning</th></tr>
+    <tr><td>items <b class="req">*</b></td><td>list</td><td>Item ids or <code>#item_tags</code>, no repeats. An item may be in only one tuning file.</td></tr>
+    <tr><td>supported_attributes <b class="req">*</b></td><td>list</td><td>The only manuscript attributes these items accept. Any registered attribute works, from any mod; the form suggests Iron's Spells and vanilla ones.</td></tr>
+  </table>
+</section>
+
+<section id="abracadabra">
+  <h2><span class="r">ᚾ</span> Abracadabra Spells</h2>
+  <p class="lead">The spells the Abracadabra enchantment may cast when an enemy hits you. Path: <code>data/iss_runeforged/abracadabra_spells.json</code>.</p>
+  <table class="card schema">
+    <tr><th>Field</th><th>Type</th><th>Meaning</th></tr>
+    <tr><td>spells</td><td>list</td><td>Each entry: <code>spell</code><b class="req">*</b> (id, once per file) and <code>target</code><b class="req">*</b> (<code>self</code> or <code>attacker</code>).</td></tr>
+    <tr><td>replace</td><td>bool</td><td>true drops every rule from lower packs.</td></tr>
+  </table>
+</section>
+
+<section id="resources">
+  <h2><span class="r">ᛁ</span> Resource Pack</h2>
+  <table class="card">
+    <tr><td>Songs</td><td><code>assets/&lt;ns&gt;/sounds/minigame/&lt;song&gt;.ogg</code> with an entry in <code>assets/&lt;ns&gt;/sounds.json</code>. Minecraft plays only Ogg Vorbis. The forgemap editor's <b>Song</b> button does all of this.</td></tr>
+    <tr><td>Awakening icons</td><td>Any texture path, named in the config's <code>display.icon</code>. The Default Pack uses <code>assets/iss_runeforged/textures/gui/&lt;school&gt;/&lt;school&gt;_awakening.png</code>.</td></tr>
+    <tr><td>Lang</td><td><code>assets/&lt;ns&gt;/lang/en_us.json</code> for translated text.</td></tr>
+  </table>
+  <p class="note">On a server, every player needs the resource pack to hear the songs. In a mod jar it comes along by itself.</p>
+</section>
+
+<section id="notation">
+  <h2><span class="r">ᛃ</span> Value Types</h2>
+  <table class="card schema">
+    <tr><td>id</td><td><code>namespace:path</code>, lower case: letters, digits, <code>_ . -</code>, and <code>/</code> in the path. Where tags are allowed, <code>#namespace:tag</code>.</td></tr>
+    <tr><td>int</td><td>A whole number.</td></tr>
+    <tr><td>number</td><td>Any number, such as <code>0.25</code>.</td></tr>
+    <tr><td>bool</td><td><code>true</code> or <code>false</code>.</td></tr>
+    <tr><td>text</td><td>Plain text or a Minecraft text component. Not blank.</td></tr>
+    <tr><td>enum</td><td>One of the listed words.</td></tr>
+    <tr><td><b class="req">*</b></td><td>Required.</td></tr>
+  </table>
+  <p class="note">Any data file can carry <code>"neoforge:conditions"</code>, a list of NeoForge load conditions, such as loading only when a mod is installed.</p>
+</section>
+</main>
+<footer>
+  <span class="r">ᚱᚢᚾᛖᚠᛟᚱᚷᛖᛞ</span>
+  <p>Runeforged by BlueLotusCoding. Not affiliated with Iron's Spells 'n Spellbooks or Overgeared.</p>
+</footer>
+</body>
+</html>
