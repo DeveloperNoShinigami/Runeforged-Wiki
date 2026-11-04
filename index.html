@@ -32,8 +32,8 @@
   <a href="#install">Install</a>
   <a href="#path">The Path</a>
   <a href="#controls">Controls</a>
-  <a href="#packs">Packs &amp; Servers</a>
-  <a href="editor/">Pack Editor</a>
+  <a href="#editor">Pack Editor</a>
+  <a href="#packs">Servers</a>
   <a href="#future">Coming Next</a>
   <a href="#changelog">Changelog</a>
 </nav>
@@ -50,6 +50,7 @@
         <li>NeoForge 21.1 or newer</li>
         <li>Iron's Spells 'n Spellbooks</li>
         <li>Overgeared</li>
+        <li>Runeforged Default Pack</li>
       </ul>
     </div>
     <div class="card">
@@ -68,9 +69,8 @@
     <h3>Content packs</h3>
     <p>Runeforged is the engine. What can be forged, the minigame maps and songs, and every awakening come from packs.</p>
     <ul>
-      <li><b>Runeforged Starter Pack:</b> a data pack and a resource pack with the full foundation set for Iron's Spells and the supported mods.</li>
-      <li><b>Your own pack:</b> build one in the <a href="editor/">Pack Editor</a>, from scratch or on top of the Starter Pack.</li>
-      <li><b>Every world at once:</b> put both packs in <a href="https://www.curseforge.com/minecraft/mc-mods/globalpacks">Global Packs</a>' folders, or add them to each world.</li>
+      <li><b>Runeforged Default Pack</b> (required, installed with the mod): the full foundation set for Iron's Spells and the supported mods.</li>
+      <li><b>Your own pack:</b> make it in the <a href="#editor">Pack Editor</a>, export it as a mod jar and drop it in <code>mods</code>. It loads after the Default Pack, so your files win.</li>
     </ul>
   </div>
 </section>
@@ -260,19 +260,34 @@
   </table>
 </section>
 
+<section id="editor">
+  <h2><span class="r">ᛞ</span> Pack Editor</h2>
+  <div class="card">
+    <p>The <a href="editor/">Pack Editor</a> runs in your browser and builds a whole Runeforged pack. Nothing to install. Your work is saved in the browser.</p>
+    <ol>
+      <li><b>New pack</b>: give it a name. Start <b>Blank</b>, or from the <b>Elemental lineup</b> (the Default Pack's configs to change).</li>
+      <li>Add what you want from the list on the left. Each file opens as a form.</li>
+      <li>Fix any red problems on the right; they lock Export.</li>
+      <li><b>Export ▾</b> → <b>Mod jar</b>, then drop it in <code>mods</code>. Or export a data pack + resource pack pair.</li>
+    </ol>
+    <table>
+      <tr><td>Awakening configs</td><td>What a school does when Runic Awakening wakes a weapon, armour, shield or focus: cost, duration, cooldown, and the effects on hit, kill, cast or block. One per school and behaviour; yours replaces the Default Pack's.</td></tr>
+      <tr><td>Forgemaps</td><td>The anvil minigame charts for Rune Forging, Catch the Rune and Runic Lanes, per hammer tier and school. Load a song and the editor finds its beats.</td></tr>
+      <tr><td>Forging tags</td><td>Which items can be runeforged, and as what: melee, projectile, spell casting, shield, armour or curio.</td></tr>
+      <tr><td>Item tuning</td><td>Per-item stats a forged item gains, for one item or a group.</td></tr>
+      <tr><td>Abracadabra spells</td><td>Which spells the Abracadabra enchantment can cast, and on whom.</td></tr>
+      <tr><td>Songs and icons</td><td>Go in the resource half of the pack (<code>assets/</code>).</td></tr>
+    </table>
+    <p class="note">In game, <code>/runeforged dump</code> writes every item, spell and school id in your modpack to a zip. Import it and the editor's id fields offer exactly what you have installed.</p>
+  </div>
+</section>
+
 <section id="packs">
-  <h2><span class="r">ᛞ</span> Packs &amp; Servers</h2>
-  <div class="cols">
-    <div class="card">
-      <h3>Pack makers</h3>
-      <p>Almost everything is data-driven, so a datapack can change it. An awakening config in your own pack replaces the Starter Pack's for the same school and behaviour, wherever you put it:</p>
-      <ul><li>forgemaps (minigame songs and charts): build them, and the rest of a pack, in the browser with the <a href="editor/">Pack Editor</a></li><li>awakening effects</li><li>quality tuning</li><li>recipes</li><li>the manuscript loot chance (<code>loot_modifiers/runic_manuscript_chest.json</code>, default 2%)</li></ul>
-    </div>
-    <div class="card">
-      <h3>Server owners</h3>
-      <p>The config files are in <code>config/</code>:</p>
-      <ul><li>server: mastery points, slots, cooldowns</li><li>Ego Awakening</li><li>client</li><li>manuscripts</li><li>gun mana (<code>iss_runeforged-gun-mana.toml</code>)</li></ul>
-    </div>
+  <h2><span class="r">ᛃ</span> Servers</h2>
+  <div class="card">
+    <p>The config files are in <code>config/</code>:</p>
+    <ul><li>server: mastery points, slots, cooldowns</li><li>Ego Awakening</li><li>client</li><li>manuscripts</li><li>gun mana (<code>iss_runeforged-gun-mana.toml</code>)</li></ul>
+    <p>Pack mod jars go in the server's <code>mods</code> folder and every player's.</p>
   </div>
 </section>
 
@@ -300,7 +315,7 @@
       <li>Runic Awakening, Ego Awakening and Ego Spirits.</li>
       <li>The Black Lotus mana pistol (TACZ).</li>
       <li>Patchouli guide book.</li>
-      <li>Content moved to the Runeforged Starter Pack; the mod is the engine.</li>
+      <li>Content moved to the Runeforged Default Pack; the mod is the engine.</li>
       <li>Pack Editor exports a data pack and a resource pack, or one plug-and-play mod jar.</li>
     </ul>
   </div>

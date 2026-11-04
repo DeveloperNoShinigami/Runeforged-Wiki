@@ -591,7 +591,7 @@ async function quickAdd(i) {
         { key: 'school', label: 'School', type: 'select', value: 'fire', options: BUNDLED_AWAKENING_SCHOOLS },
         { key: 'behavior', label: 'Behaviour', type: 'select', value: 'melee', options: BEHAVIORS },
       ],
-      note: 'Your config replaces the Starter Pack\'s config for the same school and behaviour.',
+      note: 'Your config replaces the Default Pack\'s config for the same school and behaviour.',
     });
     if (!v) return;
     const path = `data/${ns}/awakening_configs/${v.school}/${v.behavior}.json`;
@@ -1022,11 +1022,12 @@ function buildResourceZip() {
 function buildModJar({ modId, name, version, authors, description, license }) {
   const zip = new JSZip();
   const s = v => JSON.stringify(String(v)); // TOML basic strings take JSON escapes
-  const dep = (id, range, ordering) => `\n[[dependencies.${modId}]]\nmodId = ${s(id)}\ntype = "required"\nversionRange = ${s(range)}\nordering = ${s(ordering)}\nside = "BOTH"\n`;
+  const dep = (id, range, ordering, type = 'required') => `\n[[dependencies.${modId}]]\nmodId = ${s(id)}\ntype = ${s(type)}\nversionRange = ${s(range)}\nordering = ${s(ordering)}\nside = "BOTH"\n`;
   zip.file('META-INF/neoforge.mods.toml',
     `modLoader = "lowcodefml"\nloaderVersion = "[4,)"\nlicense = ${s(license)}\n\n[[mods]]\nmodId = ${s(modId)}\nversion = ${s(version)}\n`
     + `displayName = ${s(name)}\nauthors = ${s(authors)}\ndescription = ${s(description)}\n`
-    + dep('neoforge', '[21.1,)', 'NONE') + dep('minecraft', '[1.21.1,1.22)', 'NONE') + dep('iss_runeforged', '[1.0.0,)', 'AFTER'));
+    + dep('neoforge', '[21.1,)', 'NONE') + dep('minecraft', '[1.21.1,1.22)', 'NONE') + dep('iss_runeforged', '[1.0.0,)', 'AFTER')
+    + (modId === 'runeforged_default' ? '' : dep('runeforged_default', '[0,)', 'AFTER', 'optional'))); // your pack wins over the Default Pack
   zip.file('pack.mcmeta', metaJson({ pack_format: DATAPACK_FORMAT, supported_formats: [RESOURCEPACK_FORMAT, DATAPACK_FORMAT], description: name }));
   for (const [p, f] of Object.entries(files)) if (p !== 'pack.mcmeta') zip.file(p, textOf(f));
   return zip;
