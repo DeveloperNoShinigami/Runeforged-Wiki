@@ -591,11 +591,10 @@ async function quickAdd(i) {
         { key: 'school', label: 'School', type: 'select', value: 'fire', options: BUNDLED_AWAKENING_SCHOOLS },
         { key: 'behavior', label: 'Behaviour', type: 'select', value: 'melee', options: BEHAVIORS },
       ],
-      note: 'If the mod already ships this school and behaviour, the file is saved at the mod\'s path so it replaces the built-in one.',
+      note: 'Your config replaces the Starter Pack\'s config for the same school and behaviour.',
     });
     if (!v) return;
-    const bundled = BUNDLED_AWAKENING_SCHOOLS.includes(v.school) && BUNDLED_AWAKENING_BEHAVIORS.includes(v.behavior);
-    const path = `data/${bundled ? 'iss_runeforged' : ns}/awakening_configs/${v.school}/${v.behavior}.json`;
+    const path = `data/${ns}/awakening_configs/${v.school}/${v.behavior}.json`;
     if (!files[path]) putFile(path, { data: newData('awakening', path) });
     return select(path);
   }
@@ -960,8 +959,7 @@ function markErrors() {
     const target = fieldFor(form, p.path);
     if (!target) continue;
     target.classList.add('bad');
-    const i = problems.indexOf(p);
-    target.append(el('div', { className: 'msg', textContent: p.msg, style: p.moveTo ? 'cursor:pointer;text-decoration:underline' : '', onclick: p.moveTo ? () => goTo(i) : null }));
+    target.append(el('div', { className: 'msg', textContent: p.msg }));
   }
 }
 
@@ -974,12 +972,6 @@ function fieldFor(form, path) {
 
 function goTo(i) {
   const p = problems[i];
-  if (p.moveTo) {
-    if (files[p.moveTo]) return toast(`${p.moveTo} already exists. Delete or merge one of the two files.`);
-    relocate(p.file, p.moveTo, false);
-    rawView = false; select(p.moveTo);
-    return toast(`Moved to ${p.moveTo}. It now replaces the built-in config.`);
-  }
   if (selected !== p.file) { rawView = false; select(p.file); }
   if (files[p.file]?.kind === 'forgemap') return ForgemapEditor.focusPath(p.path);
   const form = document.getElementById('form');
